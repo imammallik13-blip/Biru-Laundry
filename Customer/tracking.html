@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracking — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+    <div class="topbar-user">
+      <a href="profil.html" class="avatar" aria-label="Profil">S</a>
+      <button type="button" id="logoutBtn" class="icon-btn" aria-label="Logout" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page page-narrow">
+
+  <a href="dashboard-customer.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    Kembali ke Dashboard
+  </a>
+
+  <div class="greeting">
+    <span class="eyebrow">Tracking</span>
+    <h1>Status Laundry Kamu</h1>
+    <p>Update terakhir baru saja.</p>
+  </div>
+
+  <section class="card">
+    <div class="active-card-head">
+      <div>
+        <p class="order-number" style="font-weight:600; color:var(--color-ink); font-size:1rem;">Order #BL-00214</p>
+        <p class="order-number">Dibuat 3 Jul 2026 · Antar ke Toko</p>
+      </div>
+      <span class="status-badge">Sedang Diproses</span>
+    </div>
+
+    <div class="tracking">
+      <div class="track-step done">
+        <div class="track-line"></div>
+        <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+        <span>Order Diterima<span class="step-time">3 Jul, 09.14</span></span>
+      </div>
+      <div class="track-step active">
+        <div class="track-line"></div>
+        <div class="dot"></div>
+        <span>Sedang Diproses<span class="step-time">Berlangsung</span></span>
+      </div>
+      <div class="track-step">
+        <div class="track-line"></div>
+        <div class="dot"></div>
+        <span>Siap Diambil / Diantar<span class="step-time">—</span></span>
+      </div>
+      <div class="track-step">
+        <div class="track-line"></div>
+        <div class="dot"></div>
+        <span>Selesai<span class="step-time">—</span></span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-grid">
+      <div class="info-item"><span>Jenis Layanan</span><strong>Reguler (Kiloan)</strong></div>
+      <div class="info-item"><span>Berat</span><strong>4 kg</strong></div>
+      <div class="info-item"><span>Estimasi Selesai</span><strong>5 Juli 2026</strong></div>
+      <div class="info-item"><span>Total Harga</span><strong>Rp 32.000</strong></div>
+      <div class="info-item"><span>Status Pembayaran</span><strong>DP — sisa Rp 12.000</strong></div>
+      <div class="info-item"><span>Catatan</span><strong>Pisahkan baju putih</strong></div>
+    </div>
+
+    <div class="active-card-foot" style="margin-top:22px;">
+      <a href="chat.html" class="btn btn-outline">Ada Kendala?</a>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Status standar disamakan dgn dashboard-admin.html / order-masuk.html / order-aktif.html
+  const STATUS_LABEL = {
+    menunggu_konfirmasi: 'Menunggu Konfirmasi',
+    menunggu_dijemput:   'Menunggu Dijemput',
+    diterima:            'Order Diterima',
+    proses:              'Sedang Diproses',
+    siap:                'Siap Diambil/Diantar',
+    selesai:             'Selesai',
+    dibatalkan:          'Dibatalkan',
+  };
+  // Posisi dot tracking (0-3) untuk tiap status yang dianggap "aktif"
+  const STEP_INDEX = {
+    menunggu_konfirmasi: -1,
+    menunggu_dijemput:   -1,
+    diterima:            0,
+    proses:              1,
+    siap:                2,
+    selesai:             3,
+  };
+
+  let currentUserId = null; // auth id
+  let customerId    = null; // customers.id — dipakai untuk query orders
+
+  async function loadTrackingData() {
+    try {
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError || !session) { window.location.href = '../masuk.html'; return; }
+      currentUserId = session.user.id;
+
+      const { data: profile } = await supabaseClient.from('profiles').select('name').eq('id', currentUserId).single();
+      if (profile) document.querySelector('.avatar').textContent = (profile.name || 'U').charAt(0).toUpperCase();
+
+      // Translate auth id → customers.id (orders.customer_id merujuk ke customers.id)
+      const { data: customerRow, error: customerError } = await supabaseClient
+        .from('customers').select('id').eq('profile_id', currentUserId).maybeSingle();
+
+      if (customerError || !customerRow) {
+        console.error('Data customer tidak ditemukan:', customerError);
+        document.querySelector('.greeting h1').textContent = 'Data Belum Lengkap';
+        document.querySelector('.greeting p').textContent = 'Hubungi admin untuk melengkapi data pelanggan kamu.';
+        document.querySelector('.card').style.display = 'none';
+        return;
+      }
+      customerId = customerRow.id;
+
+      const { data: orders, error: orderError } = await supabaseClient
+        .from('orders').select('*').eq('customer_id', customerId)
+        .not('status', 'in', '("selesai","dibatalkan")')
+        .order('created_at', { ascending: false }).limit(1);
+
+      if (orderError) throw orderError;
+
+      if (!orders || orders.length === 0) {
+        document.querySelector('.greeting h1').textContent = 'Tidak Ada Order Aktif';
+        document.querySelector('.greeting p').textContent = 'Semua order sudah selesai atau belum ada order.';
+        document.querySelector('.card').style.display = 'none';
+        return;
+      }
+
+      const o = orders[0];
+      const orderNum = '#BL-' + String(o.order_number || o.id).padStart(5, '0');
+
+      document.querySelector('.order-number:first-of-type').textContent = orderNum;
+      const tglDibuat = new Date(o.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      document.querySelectorAll('.order-number')[1].textContent = `Dibuat ${tglDibuat} · ${o.order_source === 'pickup' ? 'Pickup' : 'Antar ke Toko'}`;
+
+      document.querySelector('.status-badge').textContent = STATUS_LABEL[o.status] || o.status;
+
+      const infoItems = document.querySelectorAll('.info-item strong');
+      if (infoItems.length >= 6) {
+        infoItems[0].textContent = o.order_category || 'Menunggu diproses';
+        infoItems[1].textContent = o.weight_kg ? `${o.weight_kg} kg` : 'Menunggu timbangan';
+        const est = new Date(o.created_at); est.setDate(est.getDate() + 3);
+        infoItems[2].textContent = est.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        infoItems[3].textContent = o.total_price ? `Rp ${o.total_price.toLocaleString('id-ID')}` : 'Menunggu konfirmasi';
+        infoItems[4].textContent = o.total_price ? 'Lunas / Menunggu Pembayaran' : 'Menunggu konfirmasi';
+        infoItems[5].textContent = o.notes || '—';
+      }
+
+      // Stepper: 4 step tampil = diterima(0), proses(1), siap(2), selesai(3)
+      const stepIdx = STEP_INDEX[o.status] ?? -1;
+      document.querySelectorAll('.track-step').forEach((el, i) => {
+        el.classList.remove('done', 'active');
+        const timeSpan = el.querySelector('.step-time');
+        if (stepIdx === -1) {
+          if (timeSpan) timeSpan.textContent = '—';
+        } else if (i < stepIdx) {
+          el.classList.add('done');
+          if (timeSpan) timeSpan.textContent = 'Selesai';
+        } else if (i === stepIdx) {
+          el.classList.add('active');
+          if (timeSpan) timeSpan.textContent = 'Berlangsung';
+        } else {
+          if (timeSpan) timeSpan.textContent = '—';
+        }
+      });
+
+    } catch (err) { console.error('Error tracking:', err); }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadTrackingData);
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await supabaseClient.auth.signOut(); } catch(e) {}
+    finally { window.location.href = '../masuk.html'; }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Flow — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<link rel="stylesheet" href="../css/owner.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-owner.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Dashboard
+      </a>
+      <a href="cash-flow.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        Cash Flow
+      </a>
+      <a href="kelola-harga.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Harga
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1>Cash Flow</h1>
+        <p>Uang masuk otomatis dari pembayaran, uang keluar dicatat manual di sini.</p>
+      </div>
+    </div>
+
+    <!-- Filter periode -->
+    <div class="filter-bar">
+      <div class="io-field" style="margin-bottom:0;">
+        <label style="font-size:0.8rem;">Dari Tanggal</label>
+        <input type="date" id="filterStart">
+      </div>
+      <div class="io-field" style="margin-bottom:0;">
+        <label style="font-size:0.8rem;">Sampai Tanggal</label>
+        <input type="date" id="filterEnd">
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="applyFilterBtn" style="align-self:flex-end;">Terapkan</button>
+      <button type="button" class="btn btn-outline btn-sm" id="thisMonthBtn" style="align-self:flex-end;">Bulan Ini</button>
+    </div>
+
+    <!-- Ringkasan -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="s-label">Total Masuk</p>
+        <p class="s-value" id="statMasuk" style="color:#2F7A4F;">–</p>
+      </div>
+      <div class="summary-card">
+        <p class="s-label">Total Keluar</p>
+        <p class="s-value" id="statKeluar" style="color:#9A3B34;">–</p>
+      </div>
+      <div class="summary-card accent">
+        <p class="s-label">Saldo Bersih</p>
+        <p class="s-value" id="statSaldo">–</p>
+      </div>
+    </div>
+
+    <!-- Form tambah pengeluaran -->
+    <section class="card" style="margin-bottom:32px;">
+      <span class="eyebrow">Uang Keluar</span>
+      <h3 class="section-title" style="margin-top:2px;">Catat Pengeluaran Baru</h3>
+      <div class="owner-form-grid">
+        <div class="form-group">
+          <label for="expCategory">Kategori</label>
+          <select id="expCategory">
+            <option value="gaji">Gaji</option>
+            <option value="listrik">Listrik</option>
+            <option value="deterjen">Deterjen</option>
+            <option value="sewa">Sewa</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="expAmount">Jumlah (Rp)</label>
+          <input type="number" id="expAmount" min="0" step="1000" placeholder="Contoh: 150000">
+        </div>
+        <div class="form-group">
+          <label for="expDate">Tanggal</label>
+          <input type="date" id="expDate">
+        </div>
+        <div class="form-group">
+          <label for="expDesc">Deskripsi <span style="font-weight:400; color:var(--color-muted);">— opsional</span></label>
+          <input type="text" id="expDesc" placeholder="Misal: gaji staff Juli">
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="saveExpenseBtn" style="margin-top:16px;">+ Simpan Pengeluaran</button>
+    </section>
+
+    <!-- Tabel transaksi -->
+    <div class="admin-topbar" style="margin-bottom:16px;">
+      <h2 class="section-title" style="margin:0;">Riwayat Transaksi</h2>
+      <button type="button" class="btn btn-outline btn-sm" id="exportCsvBtn">Export ke Excel (CSV)</button>
+    </div>
+    <div class="table-wrapper">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Keterangan</th>
+            <th>Kategori/Metode</th>
+            <th style="text-align:right;">Jumlah</th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody">
+          <tr><td colspan="4" class="table-empty">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// HELPERS
+// ============================================================
+function formatRupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
+function formatOrderNumber(n){ return `BL-${String(n).padStart(5, '0')}`; }
+function formatTanggal(d){
+  return new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+}
+function toDateInputValue(d){ return d.toISOString().slice(0,10); }
+
+const EXPENSE_CATEGORY_MAP = { gaji:'Gaji', listrik:'Listrik', deterjen:'Deterjen', sewa:'Sewa', lainnya:'Lainnya' };
+const PAYMENT_METHOD_MAP = { cash:'Cash', transfer:'Transfer', qris:'QRIS' };
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUserId = null;
+let currentLedger = []; // dipakai buat export CSV
+
+// ============================================================
+// LOAD DATA CASH FLOW
+// ============================================================
+async function loadCashFlow(){
+  const startStr = document.getElementById('filterStart').value;
+  const endStr = document.getElementById('filterEnd').value;
+  if (!startStr || !endStr) return;
+
+  const startISO = new Date(startStr + 'T00:00:00').toISOString();
+  const endISO = new Date(endStr + 'T23:59:59').toISOString();
+
+  const [paymentsRes, expensesRes] = await Promise.all([
+    supabaseClient
+      .from('payments')
+      .select('amount, method, paid_at, orders ( order_number, customers ( name ) )')
+      .gte('paid_at', startISO)
+      .lte('paid_at', endISO),
+    supabaseClient
+      .from('expenses')
+      .select('id, category, amount, description, date')
+      .gte('date', startStr)
+      .lte('date', endStr),
+  ]);
+
+  if (paymentsRes.error || expensesRes.error){
+    console.error(paymentsRes.error || expensesRes.error);
+    document.getElementById('ledgerBody').innerHTML =
+      `<tr><td colspan="4" class="table-empty">Gagal memuat data cash flow.</td></tr>`;
+    return;
+  }
+
+  const masukRows = (paymentsRes.data || []).map(p => ({
+    date: p.paid_at,
+    type: 'masuk',
+    label: `Pembayaran ${p.orders ? '#' + formatOrderNumber(p.orders.order_number) + ' — ' + (p.orders.customers?.name || '-') : ''}`,
+    tag: PAYMENT_METHOD_MAP[p.method] || p.method,
+    amount: Number(p.amount || 0),
+  }));
+
+  const keluarRows = (expensesRes.data || []).map(e => ({
+    date: e.date,
+    type: 'keluar',
+    label: e.description || '-',
+    tag: EXPENSE_CATEGORY_MAP[e.category] || e.category,
+    amount: Number(e.amount || 0),
+  }));
+
+  currentLedger = [...masukRows, ...keluarRows].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const totalMasuk = masukRows.reduce((s, r) => s + r.amount, 0);
+  const totalKeluar = keluarRows.reduce((s, r) => s + r.amount, 0);
+
+  document.getElementById('statMasuk').textContent = formatRupiah(totalMasuk);
+  document.getElementById('statKeluar').textContent = formatRupiah(totalKeluar);
+  document.getElementById('statSaldo').textContent = formatRupiah(totalMasuk - totalKeluar);
+
+  renderLedger();
+}
+
+function renderLedger(){
+  const tbody = document.getElementById('ledgerBody');
+  if (currentLedger.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" class="table-empty">Tidak ada transaksi di periode ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = currentLedger.map(r => `
+    <tr>
+      <td>${formatTanggal(r.date)}</td>
+      <td>${r.label}</td>
+      <td><span class="ledger-tag">${r.tag}</span></td>
+      <td style="text-align:right;">
+        <span class="ledger-amount ${r.type}">${r.type === 'masuk' ? '+' : '−'} ${formatRupiah(r.amount)}</span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ============================================================
+// TAMBAH PENGELUARAN
+// ============================================================
+document.getElementById('saveExpenseBtn').addEventListener('click', async () => {
+  const category = document.getElementById('expCategory').value;
+  const amount = Number(document.getElementById('expAmount').value);
+  const date = document.getElementById('expDate').value;
+  const description = document.getElementById('expDesc').value.trim();
+
+  if (!amount || amount <= 0){ alert('Jumlah pengeluaran harus diisi.'); return; }
+  if (!date){ alert('Tanggal wajib diisi.'); return; }
+
+  const btn = document.getElementById('saveExpenseBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+  const { error } = await supabaseClient.from('expenses').insert({
+    category, amount, description: description || null, date, created_by: currentUserId,
+  });
+
+  btn.disabled = false; btn.textContent = '+ Simpan Pengeluaran';
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan pengeluaran: ' + error.message);
+    return;
+  }
+
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expDesc').value = '';
+  loadCashFlow();
+});
+
+// ============================================================
+// EXPORT CE CSV (dibuka Excel langsung, tanpa library tambahan)
+// ============================================================
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  if (currentLedger.length === 0){ alert('Tidak ada data buat di-export.'); return; }
+
+  const header = ['Tanggal', 'Keterangan', 'Kategori/Metode', 'Tipe', 'Jumlah (Rp)'];
+  const rows = currentLedger.map(r => [
+    formatTanggal(r.date),
+    `"${(r.label || '').replace(/"/g, '""')}"`,
+    r.tag,
+    r.type === 'masuk' ? 'Masuk' : 'Keluar',
+    r.amount,
+  ]);
+
+  const csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const startStr = document.getElementById('filterStart').value;
+  const endStr = document.getElementById('filterEnd').value;
+  a.href = url;
+  a.download = `cash-flow_${startStr}_sd_${endStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ============================================================
+// FILTER PERIODE
+// ============================================================
+document.getElementById('applyFilterBtn').addEventListener('click', loadCashFlow);
+document.getElementById('thisMonthBtn').addEventListener('click', () => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('filterStart').value = toDateInputValue(firstDay);
+  document.getElementById('filterEnd').value = toDateInputValue(now);
+  loadCashFlow();
+});
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── AUTH GUARD — HANYA owner ───────────────────────────────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!profile || profile.role !== 'owner') {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  currentUserId = session.user.id;
+
+  // Default filter: bulan berjalan
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('filterStart').value = toDateInputValue(firstDay);
+  document.getElementById('filterEnd').value = toDateInputValue(now);
+  document.getElementById('expDate').value = toDateInputValue(now);
+
+  await loadCashFlow();
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

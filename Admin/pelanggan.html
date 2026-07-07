@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Pelanggan — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-admin.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+        Dashboard
+      </a>
+      <a href="order-masuk.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M21 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"></path><path d="M3 8l2.45-4.11A2 2 0 0 1 7.18 3h9.64a2 2 0 0 1 1.73.89L21 8"></path><path d="M3 8h18"></path></svg>
+        Order Masuk
+      </a>
+      <a href="order-aktif.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
+        Order Aktif
+      </a>
+      <a href="input-order.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Input Order Baru
+      </a>
+      <a href="pelanggan.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Kelola Pelanggan
+      </a>
+      <a href="promo-admin.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Promo
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1>Kelola Pelanggan</h1>
+        <p id="totalCountText">Memuat data pelanggan...</p>
+      </div>
+    </div>
+
+    <!-- Tab navigasi -->
+    <div class="om-tabs">
+      <button class="om-tab active" id="tabBtnDaftar" data-tab="daftar">
+        Daftar Pelanggan
+      </button>
+      <button class="om-tab" id="tabBtnNotifikasi" data-tab="notifikasi">
+        Notifikasi Loyalti
+        <span class="om-count" id="loyaltyCount">0</span>
+      </button>
+    </div>
+
+    <!-- ============== TAB: DAFTAR PELANGGAN ============== -->
+    <div id="tabDaftar">
+
+      <!-- Filter toolbar -->
+      <div class="filter-bar">
+        <input type="search" id="searchInput" placeholder="Cari nama atau no HP...">
+      </div>
+
+      <!-- Tabel pelanggan -->
+      <div class="table-wrapper">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>No HP</th>
+              <th>Total Order</th>
+              <th>Total Kg</th>
+              <th>Order Terakhir</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pelangganTableBody">
+            <tr><td colspan="6" class="table-empty">Memuat data pelanggan...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ============== TAB: NOTIFIKASI LOYALTI ============== -->
+    <div id="tabNotifikasi" class="hidden">
+
+      <!-- Pengaturan threshold -->
+      <div class="card" style="margin-bottom:24px;">
+        <h3 style="margin-bottom:4px;">Pengaturan Threshold</h3>
+        <p class="io-hint">Pelanggan akan muncul di daftar notifikasi kalau penambahan kg atau jumlah order sejak terakhir kali "ditandai" sudah melewati angka ini.</p>
+        <div class="io-field-row">
+          <div class="io-field">
+            <label for="thresholdKgInput">Threshold Berat (kg)</label>
+            <input type="number" id="thresholdKgInput" min="1" step="1">
+          </div>
+          <div class="io-field">
+            <label for="thresholdOrdersInput">Threshold Jumlah Order</label>
+            <input type="number" id="thresholdOrdersInput" min="1" step="1">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="saveThresholdBtn">Simpan Threshold</button>
+        <span id="thresholdSaveMsg" style="display:none; margin-left:10px; color:#2F7A4F; font-size:0.86rem; font-weight:600;">✓ Threshold berhasil disimpan</span>
+      </div>
+
+      <!-- Daftar pelanggan yang lewat threshold -->
+      <h2 class="section-title">Pelanggan yang Sudah Layak Diberi Promo</h2>
+      <div class="om-list" id="loyaltyList">
+        <p class="io-empty">Memuat data...</p>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- ============== PANEL DETAIL (slide dari kanan) ============== -->
+<div class="pel-panel-overlay hidden" id="pelPanelOverlay">
+  <aside class="pel-panel" id="pelPanel">
+
+    <div class="pel-panel-header">
+      <div>
+        <h2 id="pelName">-</h2>
+        <span class="pel-badge" id="pelAccountBadge">-</span>
+      </div>
+      <button class="pel-close-btn" id="pelCloseBtn" aria-label="Tutup">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="pel-panel-body">
+
+      <!-- Ringkasan Loyalti -->
+      <div class="pel-stat-row">
+        <div class="pel-stat-box">
+          <span class="s-label">Total Order</span>
+          <span class="pel-stat-value" id="pelStatOrders">0</span>
+        </div>
+        <div class="pel-stat-box">
+          <span class="s-label">Total Kg</span>
+          <span class="pel-stat-value" id="pelStatKg">0</span>
+        </div>
+      </div>
+
+      <!-- Data Diri -->
+      <div class="pel-section">
+        <h3>Data Diri</h3>
+        <p class="io-hint" id="pelAccountNote"></p>
+        <div class="io-field-row">
+          <div class="io-field">
+            <label for="pelInputName">Nama</label>
+            <input type="text" id="pelInputName">
+          </div>
+          <div class="io-field">
+            <label for="pelInputPhone">No HP</label>
+            <input type="tel" id="pelInputPhone">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="pelSaveDataBtn">Simpan Perubahan</button>
+      </div>
+
+      <!-- Alamat -->
+      <div class="pel-section">
+        <div class="pel-section-head">
+          <h3>Alamat</h3>
+          <button class="add-address-btn" id="pelAddAddressBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Tambah Alamat
+          </button>
+        </div>
+        <div id="pelAddressList">
+          <p class="io-empty">Belum ada alamat tersimpan.</p>
+        </div>
+      </div>
+
+      <!-- Riwayat Order -->
+      <div class="pel-section">
+        <h3>Riwayat Order</h3>
+        <div id="pelOrderList">
+          <p class="io-empty">Belum ada riwayat order.</p>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+</div>
+
+<!-- ============== MODAL: TAMBAH/EDIT ALAMAT ============== -->
+<div class="modal-overlay hidden" id="addressModalOverlay">
+  <div class="modal-box">
+    <h3 id="addressModalTitle">Tambah Alamat</h3>
+    <p class="modal-sub">Alamat ini bisa dipakai lagi saat pelanggan minta pickup.</p>
+
+    <div class="modal-field">
+      <label for="addrLabelInput">Label Alamat</label>
+      <input type="text" id="addrLabelInput" placeholder="Rumah / Kantor / dll">
+    </div>
+    <div class="modal-field">
+      <label for="addrFullInput">Alamat Lengkap</label>
+      <input type="text" id="addrFullInput" placeholder="Jl. Contoh No. 123, Gresik">
+    </div>
+    <div class="modal-field">
+      <label class="io-radio">
+        <input type="checkbox" id="addrDefaultInput">
+        Jadikan alamat utama
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="addressModalCancelBtn">Batal</button>
+      <button class="btn btn-primary" id="addressModalSaveBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MAP PATTERN
+// ============================================================
+const STATUS_MAP = {
+  menunggu_konfirmasi: { label: 'Menunggu Konfirmasi', chipClass: 'chip-menunggu' },
+  menunggu_dijemput:   { label: 'Menunggu Dijemput',   chipClass: 'chip-menunggu' },
+  diterima:            { label: 'Diterima di Toko',    chipClass: 'chip-proses' },
+  proses:              { label: 'Sedang Diproses',     chipClass: 'chip-proses' },
+  siap:                { label: 'Siap Diambil/Diantar',chipClass: 'chip-siap' },
+  selesai:             { label: 'Selesai',              chipClass: 'chip-selesai' },
+  dibatalkan:          { label: 'Dibatalkan',           chipClass: 'chip-batal' },
+};
+
+function formatRupiah(n){
+  if (n == null) return '-';
+  return 'Rp' + Number(n).toLocaleString('id-ID');
+}
+function formatOrderNumber(n){
+  return `BL-${String(n).padStart(5, '0')}`;
+}
+function formatDate(d){
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let allCustomers = [];     // { id, name, phone, profile_id, total_kg_lifetime, total_order_lifetime, lastOrderDate }
+let currentSearch = '';
+let activeCustomerId = null;
+let editingAddressId = null; // null = mode tambah, terisi = mode edit
+let loyaltySettingsId = null;
+let thresholdKg = 50;
+let thresholdOrders = 10;
+
+// ============================================================
+// RENDER: TABEL LIST
+// ============================================================
+function applyFilterAndRender(){
+  let filtered = allCustomers;
+  if (currentSearch.trim() !== ''){
+    const q = currentSearch.trim().toLowerCase();
+    filtered = filtered.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').toLowerCase().includes(q)
+    );
+  }
+  renderTable(filtered);
+}
+
+function renderTable(customers){
+  const tbody = document.getElementById('pelangganTableBody');
+
+  if (!customers || customers.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">Tidak ada pelanggan yang cocok.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = customers.map(c => `
+    <tr>
+      <td>
+        <span class="cust-name">${c.name || '-'}</span>
+        <span class="cust-phone">${c.profile_id ? 'Akun terdaftar' : 'Walk-in'}</span>
+      </td>
+      <td>${c.phone || '-'}</td>
+      <td>${c.total_order_lifetime ?? 0}</td>
+      <td>${c.total_kg_lifetime ?? 0} kg</td>
+      <td>${formatDate(c.lastOrderDate)}</td>
+      <td><button class="row-action pel-detail-btn" data-id="${c.id}">Detail →</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.pel-detail-btn').forEach(btn => {
+    btn.addEventListener('click', () => openPanel(btn.dataset.id));
+  });
+}
+
+// ============================================================
+// PANEL DETAIL
+// ============================================================
+async function openPanel(customerId){
+  activeCustomerId = customerId;
+  const customer = allCustomers.find(c => c.id === customerId);
+  if (!customer) return;
+
+  const isAccount = !!customer.profile_id;
+
+  document.getElementById('pelName').textContent = customer.name || '-';
+  document.getElementById('pelAccountBadge').textContent = isAccount ? 'Akun Terdaftar' : 'Walk-in';
+  document.getElementById('pelAccountBadge').className = 'pel-badge ' + (isAccount ? 'pel-badge-account' : 'pel-badge-walkin');
+  document.getElementById('pelStatOrders').textContent = customer.total_order_lifetime ?? 0;
+  document.getElementById('pelStatKg').textContent = (customer.total_kg_lifetime ?? 0) + ' kg';
+
+  const nameInput = document.getElementById('pelInputName');
+  const phoneInput = document.getElementById('pelInputPhone');
+  nameInput.value = customer.name || '';
+  phoneInput.value = customer.phone || '';
+  nameInput.disabled = isAccount;
+  phoneInput.disabled = isAccount;
+  document.getElementById('pelAccountNote').textContent = isAccount
+    ? 'Pelanggan ini sudah punya akun — nama & no HP diatur lewat halaman Profil miliknya, tidak bisa diubah dari sini.'
+    : 'Pelanggan walk-in — data ini bisa diedit langsung kalau ada typo atau perubahan.';
+  document.getElementById('pelSaveDataBtn').style.display = isAccount ? 'none' : 'inline-flex';
+
+  document.getElementById('pelAddressList').innerHTML = `<p class="io-empty">Memuat alamat...</p>`;
+  document.getElementById('pelOrderList').innerHTML = `<p class="io-empty">Memuat riwayat order...</p>`;
+
+  document.getElementById('pelPanelOverlay').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('pelPanel').classList.add('open'));
+
+  await Promise.all([loadAddresses(customerId), loadOrderHistory(customerId)]);
+}
+
+function closePanel(){
+  document.getElementById('pelPanel').classList.remove('open');
+  setTimeout(() => document.getElementById('pelPanelOverlay').classList.add('hidden'), 200);
+  activeCustomerId = null;
+}
+
+document.getElementById('pelCloseBtn').addEventListener('click', closePanel);
+document.getElementById('pelPanelOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'pelPanelOverlay') closePanel();
+});
+
+// ── Simpan Data Diri (walk-in only) ──────────────────────────
+document.getElementById('pelSaveDataBtn').addEventListener('click', async () => {
+  if (!activeCustomerId) return;
+  const name = document.getElementById('pelInputName').value.trim();
+  const phone = document.getElementById('pelInputPhone').value.trim();
+
+  if (!name || !phone){
+    alert('Nama dan No HP tidak boleh kosong.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('customers')
+    .update({ name, phone })
+    .eq('id', activeCustomerId);
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan perubahan. Coba lagi.');
+    return;
+  }
+
+  const customer = allCustomers.find(c => c.id === activeCustomerId);
+  if (customer){ customer.name = name; customer.phone = phone; }
+  document.getElementById('pelName').textContent = name;
+  applyFilterAndRender();
+});
+
+// ============================================================
+// ALAMAT
+// ============================================================
+async function loadAddresses(customerId){
+  const { data, error } = await supabaseClient
+    .from('addresses')
+    .select('id, label, full_address, is_default')
+    .eq('customer_id', customerId)
+    .order('is_default', { ascending: false });
+
+  const list = document.getElementById('pelAddressList');
+  if (error){
+    console.error(error);
+    list.innerHTML = `<p class="io-empty">Gagal memuat alamat.</p>`;
+    return;
+  }
+  renderAddressList(data || []);
+}
+
+function renderAddressList(addresses){
+  const list = document.getElementById('pelAddressList');
+  if (!addresses.length){
+    list.innerHTML = `<p class="io-empty">Belum ada alamat tersimpan.</p>`;
+    return;
+  }
+
+  list.innerHTML = addresses.map(a => `
+    <div class="address-card" data-id="${a.id}">
+      <div>
+        <strong>${a.label || 'Alamat'} ${a.is_default ? '<span class="address-badge">Utama</span>' : ''}</strong>
+        <span>${a.full_address}</span>
+      </div>
+      <div class="address-actions">
+        <button class="addr-edit-btn" data-id="${a.id}" data-label="${a.label || ''}" data-full="${a.full_address}" data-default="${a.is_default}" aria-label="Edit alamat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
+        </button>
+        <button class="addr-delete-btn" data-id="${a.id}" aria-label="Hapus alamat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.addr-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openAddressModal({
+      id: btn.dataset.id, label: btn.dataset.label, full_address: btn.dataset.full, is_default: btn.dataset.default === 'true'
+    }));
+  });
+  list.querySelectorAll('.addr-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteAddress(btn.dataset.id));
+  });
+}
+
+function openAddressModal(address){
+  editingAddressId = address ? address.id : null;
+  document.getElementById('addressModalTitle').textContent = address ? 'Edit Alamat' : 'Tambah Alamat';
+  document.getElementById('addrLabelInput').value = address ? address.label : '';
+  document.getElementById('addrFullInput').value = address ? address.full_address : '';
+  document.getElementById('addrDefaultInput').checked = address ? address.is_default : false;
+  document.getElementById('addressModalOverlay').classList.remove('hidden');
+}
+
+function closeAddressModal(){
+  document.getElementById('addressModalOverlay').classList.add('hidden');
+  editingAddressId = null;
+}
+
+document.getElementById('pelAddAddressBtn').addEventListener('click', () => openAddressModal(null));
+document.getElementById('addressModalCancelBtn').addEventListener('click', closeAddressModal);
+document.getElementById('addressModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'addressModalOverlay') closeAddressModal();
+});
+
+document.getElementById('addressModalSaveBtn').addEventListener('click', async () => {
+  const label = document.getElementById('addrLabelInput').value.trim();
+  const fullAddress = document.getElementById('addrFullInput').value.trim();
+  const isDefault = document.getElementById('addrDefaultInput').checked;
+
+  if (!fullAddress){
+    alert('Alamat lengkap tidak boleh kosong.');
+    return;
+  }
+  if (!activeCustomerId) return;
+
+  // Kalau alamat ini dijadikan utama, lepas status utama dari alamat lain dulu
+  if (isDefault){
+    await supabaseClient
+      .from('addresses')
+      .update({ is_default: false })
+      .eq('customer_id', activeCustomerId);
+  }
+
+  let error;
+  if (editingAddressId){
+    ({ error } = await supabaseClient
+      .from('addresses')
+      .update({ label, full_address: fullAddress, is_default: isDefault })
+      .eq('id', editingAddressId));
+  } else {
+    ({ error } = await supabaseClient
+      .from('addresses')
+      .insert({ customer_id: activeCustomerId, label, full_address: fullAddress, is_default: isDefault }));
+  }
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan alamat. Coba lagi.');
+    return;
+  }
+
+  closeAddressModal();
+  loadAddresses(activeCustomerId);
+});
+
+async function deleteAddress(addressId){
+  if (!confirm('Hapus alamat ini?')) return;
+  const { error } = await supabaseClient.from('addresses').delete().eq('id', addressId);
+  if (error){
+    console.error(error);
+    alert('Gagal menghapus alamat.');
+    return;
+  }
+  loadAddresses(activeCustomerId);
+}
+
+// ============================================================
+// RIWAYAT ORDER
+// ============================================================
+async function loadOrderHistory(customerId){
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select('id, order_number, status, total_price, created_at')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  const list = document.getElementById('pelOrderList');
+  if (error){
+    console.error(error);
+    list.innerHTML = `<p class="io-empty">Gagal memuat riwayat order.</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0){
+    list.innerHTML = `<p class="io-empty">Belum ada riwayat order.</p>`;
+    return;
+  }
+
+  list.innerHTML = data.map(o => {
+    const statusInfo = STATUS_MAP[o.status] || { label: o.status, chipClass: 'chip-menunggu' };
+    return `
+      <a href="order-detail.html?id=${o.id}" class="pel-order-row">
+        <div>
+          <strong>#${formatOrderNumber(o.order_number)}</strong>
+          <span>${formatDate(o.created_at)}</span>
+        </div>
+        <div class="pel-order-row-right">
+          <span class="chip ${statusInfo.chipClass}">${statusInfo.label}</span>
+          <span class="pel-order-total">${formatRupiah(o.total_price)}</span>
+        </div>
+      </a>`;
+  }).join('');
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+document.getElementById('tabBtnDaftar').addEventListener('click', () => switchTab('daftar'));
+document.getElementById('tabBtnNotifikasi').addEventListener('click', () => switchTab('notifikasi'));
+
+function switchTab(tab){
+  document.getElementById('tabDaftar').classList.toggle('hidden', tab !== 'daftar');
+  document.getElementById('tabNotifikasi').classList.toggle('hidden', tab !== 'notifikasi');
+  document.getElementById('tabBtnDaftar').classList.toggle('active', tab === 'daftar');
+  document.getElementById('tabBtnNotifikasi').classList.toggle('active', tab === 'notifikasi');
+  if (tab === 'notifikasi') renderLoyaltyList();
+}
+
+// ============================================================
+// NOTIFIKASI LOYALTI
+// ============================================================
+async function loadLoyaltySettings(){
+  const { data, error } = await supabaseClient
+    .from('loyalty_settings')
+    .select('id, threshold_kg, threshold_orders')
+    .limit(1)
+    .maybeSingle();
+
+  if (error){
+    console.error(error);
+    return;
+  }
+  if (data){
+    loyaltySettingsId = data.id;
+    thresholdKg = data.threshold_kg;
+    thresholdOrders = data.threshold_orders;
+  }
+  document.getElementById('thresholdKgInput').value = thresholdKg;
+  document.getElementById('thresholdOrdersInput').value = thresholdOrders;
+}
+
+document.getElementById('saveThresholdBtn').addEventListener('click', async () => {
+  const newKg = Number(document.getElementById('thresholdKgInput').value);
+  const newOrders = Number(document.getElementById('thresholdOrdersInput').value);
+
+  if (!newKg || !newOrders || newKg <= 0 || newOrders <= 0){
+    alert('Threshold harus lebih dari 0.');
+    return;
+  }
+  if (!loyaltySettingsId){
+    alert('Pengaturan threshold belum ditemukan di database.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('loyalty_settings')
+    .update({ threshold_kg: newKg, threshold_orders: newOrders, updated_at: new Date().toISOString() })
+    .eq('id', loyaltySettingsId);
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan threshold. Coba lagi.');
+    return;
+  }
+
+  thresholdKg = newKg;
+  thresholdOrders = newOrders;
+  renderLoyaltyList();
+
+  const msg = document.getElementById('thresholdSaveMsg');
+  msg.style.display = 'inline';
+  setTimeout(() => { msg.style.display = 'none'; }, 2500);
+});
+
+function getEligibleLoyaltyCustomers(){
+  return allCustomers.filter(c => {
+    const kgProgress = (c.total_kg_lifetime ?? 0) - (c.last_notified_kg ?? 0);
+    const orderProgress = (c.total_order_lifetime ?? 0) - (c.last_notified_orders ?? 0);
+    return kgProgress >= thresholdKg || orderProgress >= thresholdOrders;
+  });
+}
+
+function renderLoyaltyList(){
+  const eligible = getEligibleLoyaltyCustomers();
+  document.getElementById('loyaltyCount').textContent = eligible.length;
+
+  const list = document.getElementById('loyaltyList');
+  if (!eligible.length){
+    list.innerHTML = `<p class="io-empty">Belum ada pelanggan yang lewat threshold saat ini.</p>`;
+    return;
+  }
+
+  list.innerHTML = eligible.map(c => {
+    const kgProgress = (c.total_kg_lifetime ?? 0) - (c.last_notified_kg ?? 0);
+    const orderProgress = (c.total_order_lifetime ?? 0) - (c.last_notified_orders ?? 0);
+    return `
+      <div class="om-card">
+        <div class="om-card-info">
+          <p class="om-order-no">${c.name || '-'}</p>
+          <p class="om-cust"><span>${c.phone || '-'}</span></p>
+          <span class="om-requested">
+            ${kgProgress >= thresholdKg ? `Sudah nambah ${kgProgress.toFixed(1)} kg` : ''}
+            ${kgProgress >= thresholdKg && orderProgress >= thresholdOrders ? ' & ' : ''}
+            ${orderProgress >= thresholdOrders ? `${orderProgress}x order` : ''}
+            sejak terakhir ditandai
+          </span>
+        </div>
+        <div class="om-card-actions">
+          <button class="btn btn-primary btn-sm loyalty-mark-btn" data-id="${c.id}">Tandai Sudah Diberi Promo</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.loyalty-mark-btn').forEach(btn => {
+    btn.addEventListener('click', () => markLoyaltyHandled(btn.dataset.id));
+  });
+}
+
+async function markLoyaltyHandled(customerId){
+  const customer = allCustomers.find(c => c.id === customerId);
+  if (!customer) return;
+
+  const newKgBaseline = customer.total_kg_lifetime ?? 0;
+  const newOrdersBaseline = customer.total_order_lifetime ?? 0;
+
+  const { error } = await supabaseClient
+    .from('customers')
+    .update({ last_notified_kg: newKgBaseline, last_notified_orders: newOrdersBaseline })
+    .eq('id', customerId);
+
+  if (error){
+    console.error(error);
+    alert('Gagal menandai pelanggan ini. Coba lagi.');
+    return;
+  }
+
+  customer.last_notified_kg = newKgBaseline;
+  customer.last_notified_orders = newOrdersBaseline;
+  renderLoyaltyList();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── AUTH GUARD ──────────────────────────────────────────────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+  const userId = session.user.id;
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('name, role')
+    .eq('id', userId)
+    .single();
+
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  // ── AMBIL DAFTAR PELANGGAN ──────────────────────────────────
+  const { data: customers, error: customersError } = await supabaseClient
+    .from('customers')
+    .select('id, name, phone, profile_id, total_kg_lifetime, total_order_lifetime, last_notified_kg, last_notified_orders')
+    .order('name', { ascending: true });
+
+  if (customersError){
+    console.error(customersError);
+    document.getElementById('pelangganTableBody').innerHTML =
+      `<tr><td colspan="6" class="table-empty">Gagal memuat data pelanggan. Coba refresh halaman.</td></tr>`;
+    return;
+  }
+
+  // ── AMBIL TANGGAL ORDER TERAKHIR PER PELANGGAN ─────────────
+  const { data: orderDates } = await supabaseClient
+    .from('orders')
+    .select('customer_id, created_at')
+    .order('created_at', { ascending: false });
+
+  const lastOrderByCustomer = {};
+  (orderDates || []).forEach(o => {
+    if (!lastOrderByCustomer[o.customer_id]) lastOrderByCustomer[o.customer_id] = o.created_at;
+  });
+
+  allCustomers = (customers || []).map(c => ({
+    ...c,
+    lastOrderDate: lastOrderByCustomer[c.id] || null,
+  }));
+
+  document.getElementById('totalCountText').textContent = `${allCustomers.length} pelanggan terdaftar di sistem`;
+  applyFilterAndRender();
+
+  await loadLoyaltySettings();
+  document.getElementById('loyaltyCount').textContent = getEligibleLoyaltyCustomers().length;
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    applyFilterAndRender();
+  });
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

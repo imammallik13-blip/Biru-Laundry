@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promo — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+    <div class="topbar-user">
+      <a href="profil.html" class="avatar" aria-label="Profil">S</a>
+      <button type="button" id="logoutBtn" class="icon-btn" aria-label="Logout" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page page-narrow">
+  <a href="dashboard-customer.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    Kembali ke Dashboard
+  </a>
+  <div class="greeting">
+    <span class="eyebrow">Promo</span>
+    <h1>Promo Buat Kamu</h1>
+    <p>Pakai kodenya pas order berikutnya.</p>
+  </div>
+  <div id="promoList" style="display:flex; flex-direction:column; gap:16px;"></div>
+</main>
+
+<script>
+  async function loadPromoData() {
+    const el = document.getElementById('promoList');
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { window.location.href = '../masuk.html'; return; }
+
+      const { data: profile } = await supabaseClient.from('profiles').select('name').eq('id', session.user.id).single();
+      if (profile) document.querySelector('.avatar').textContent = (profile.name || 'U').charAt(0).toUpperCase();
+
+      // Tabel promos punya kolom active & valid_until — filter yang masih berlaku saja
+      const { data: promos, error } = await supabaseClient
+        .from('promos')
+        .select('*')
+        .eq('active', true);
+      if (error) throw error;
+
+      if (!promos || promos.length === 0) {
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px 20px;"><p style="color:var(--color-muted);margin:0;">Belum ada promo aktif. Cek lagi nanti ya!</p></div>';
+        return;
+      }
+
+      el.innerHTML = promos.map(p => {
+        const title = p.title || p.name || 'Promo Menarik';
+        const desc = p.description || 'Nikmati potongan harga khusus.';
+        const code = p.code || 'PROMO';
+        const berlaku = p.valid_until
+          ? 'Sampai ' + new Date(p.valid_until).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'})
+          : 'Terbatas';
+        return '<div class="card promo-card">'
+          + '<span class="eyebrow">Promo</span>'
+          + '<h3 style="font-size:1.05rem;margin-bottom:6px;">' + title + '</h3>'
+          + '<p style="color:var(--color-muted);font-size:0.9rem;margin:0 0 16px;">' + desc + '</p>'
+          + '<div class="promo-code-row">'
+          + '<span class="promo-code">' + code + '</span>'
+          + '<button type="button" class="btn btn-outline promo-copy-btn" data-code="' + code + '">Salin Kode</button>'
+          + '</div>'
+          + '<span class="form-hint" style="margin-top:10px;display:block;">' + berlaku + '</span>'
+          + '</div>';
+      }).join('');
+
+      document.querySelectorAll('.promo-copy-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(btn.dataset.code); } catch(e) {}
+          const orig = btn.textContent;
+          btn.textContent = 'Tersalin! ✓';
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        });
+      });
+
+    } catch (err) {
+      console.error('Gagal memuat promo:', err);
+      el.innerHTML = '<div class="card" style="padding:20px;color:var(--color-error);">Gagal memuat promo: ' + err.message + '</div>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadPromoData);
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await supabaseClient.auth.signOut(); } catch(e) {}
+    finally { window.location.href = '../masuk.html'; }
+  });
+</script>
+
+</body>
+</html>
