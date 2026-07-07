@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Harga — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<link rel="stylesheet" href="../css/owner.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-owner.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Dashboard
+      </a>
+      <a href="cash-flow.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        Cash Flow
+      </a>
+      <a href="kelola-harga.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Harga
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1>Kelola Harga</h1>
+        <p>Cuma Owner yang bisa ubah harga di sini — Admin nggak punya akses ubah harga.</p>
+      </div>
+    </div>
+
+    <!-- ===== Harga Kiloan ===== -->
+    <section style="margin-bottom:36px;">
+      <h2 class="section-title">Harga Kiloan</h2>
+      <p class="price-table-note">Berlaku otomatis untuk semua order kiloan — perubahan di sini langsung dipakai staff pas input order baru.</p>
+      <div class="table-wrapper">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Layanan</th>
+              <th>Harga / Kg</th>
+              <th>Minimum Charge</th>
+              <th>Estimasi Selesai</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="servicesTableBody">
+            <tr><td colspan="5" class="table-empty">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== Harga Satuan ===== -->
+    <section>
+      <div class="admin-topbar" style="margin-bottom:16px;">
+        <h2 class="section-title" style="margin:0;">Harga Satuan</h2>
+        <button type="button" class="btn btn-primary btn-sm" id="addItemBtn">+ Tambah Item</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Nama Item</th>
+              <th>Harga</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody">
+            <tr><td colspan="3" class="table-empty">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============== MODAL: EDIT HARGA KILOAN ============== -->
+<div class="modal-overlay hidden" id="serviceModalOverlay">
+  <div class="modal-box">
+    <h3 id="serviceModalTitle">Edit Harga Layanan</h3>
+    <p class="modal-sub">Perubahan berlaku langsung untuk order baru.</p>
+
+    <div class="modal-field">
+      <label for="svcPrice">Harga per Kg (Rp)</label>
+      <input type="number" id="svcPrice" min="0" step="500">
+    </div>
+    <div class="modal-field">
+      <label for="svcMinCharge">Minimum Charge (kg)</label>
+      <input type="number" id="svcMinCharge" min="1" step="1">
+    </div>
+    <div class="modal-field">
+      <label for="svcDays">Estimasi Selesai (hari)</label>
+      <input type="number" id="svcDays" min="1" step="1">
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" id="serviceModalCancelBtn">Batal</button>
+      <button type="button" class="btn btn-primary" id="serviceModalSaveBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: TAMBAH/EDIT ITEM SATUAN ============== -->
+<div class="modal-overlay hidden" id="itemModalOverlay">
+  <div class="modal-box">
+    <h3 id="itemModalTitle">Tambah Item</h3>
+    <p class="modal-sub">Item ini akan muncul di pilihan order satuan staff.</p>
+
+    <div class="modal-field">
+      <label for="itemName">Nama Item</label>
+      <input type="text" id="itemName" placeholder="Misal: Sepatu, Bed Cover">
+    </div>
+    <div class="modal-field">
+      <label for="itemPrice">Harga (Rp)</label>
+      <input type="number" id="itemPrice" min="0" step="500">
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" id="itemModalCancelBtn">Batal</button>
+      <button type="button" class="btn btn-primary" id="itemModalSaveBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MAP PATTERN
+// ============================================================
+const CATEGORY_LABEL_MAP = { reguler: 'Reguler', express: 'Express' };
+
+function formatRupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
+
+// ============================================================
+// STATE
+// ============================================================
+let allServices = [];
+let allItems = [];
+let editingServiceId = null;
+let editingItemId = null; // null = mode tambah
+
+// ============================================================
+// RENDER: HARGA KILOAN
+// ============================================================
+function renderServicesTable(){
+  const tbody = document.getElementById('servicesTableBody');
+  if (!allServices.length){
+    tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Belum ada data layanan kiloan.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allServices.map(s => `
+    <tr>
+      <td><strong>${CATEGORY_LABEL_MAP[s.category] || s.category}</strong></td>
+      <td>${formatRupiah(s.price_per_kg)}</td>
+      <td>${s.min_charge_kg} kg</td>
+      <td>${s.estimated_days} hari</td>
+      <td><button class="row-action service-edit-btn" data-id="${s.id}">Edit</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.service-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openServiceModal(btn.dataset.id));
+  });
+}
+
+function openServiceModal(id){
+  editingServiceId = id;
+  const svc = allServices.find(s => s.id === id);
+  if (!svc) return;
+
+  document.getElementById('serviceModalTitle').textContent = `Edit Harga — ${CATEGORY_LABEL_MAP[svc.category] || svc.category}`;
+  document.getElementById('svcPrice').value = svc.price_per_kg;
+  document.getElementById('svcMinCharge').value = svc.min_charge_kg;
+  document.getElementById('svcDays').value = svc.estimated_days;
+  document.getElementById('serviceModalOverlay').classList.remove('hidden');
+}
+function closeServiceModal(){
+  document.getElementById('serviceModalOverlay').classList.add('hidden');
+  editingServiceId = null;
+}
+document.getElementById('serviceModalCancelBtn').addEventListener('click', closeServiceModal);
+document.getElementById('serviceModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'serviceModalOverlay') closeServiceModal();
+});
+
+document.getElementById('serviceModalSaveBtn').addEventListener('click', async () => {
+  const price = Number(document.getElementById('svcPrice').value);
+  const minCharge = Number(document.getElementById('svcMinCharge').value);
+  const days = Number(document.getElementById('svcDays').value);
+
+  if (!price || price <= 0){ alert('Harga per kg harus diisi.'); return; }
+  if (!minCharge || minCharge <= 0){ alert('Minimum charge harus diisi.'); return; }
+  if (!days || days <= 0){ alert('Estimasi hari harus diisi.'); return; }
+
+  const { error } = await supabaseClient
+    .from('services')
+    .update({ price_per_kg: price, min_charge_kg: minCharge, estimated_days: days })
+    .eq('id', editingServiceId);
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan: ' + error.message);
+    return;
+  }
+
+  closeServiceModal();
+  await loadServices();
+});
+
+// ============================================================
+// RENDER: HARGA SATUAN
+// ============================================================
+function renderItemsTable(){
+  const tbody = document.getElementById('itemsTableBody');
+  if (!allItems.length){
+    tbody.innerHTML = `<tr><td colspan="3" class="table-empty">Belum ada item satuan. Klik "+ Tambah Item".</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allItems.map(it => `
+    <tr>
+      <td><strong>${it.item_name}</strong></td>
+      <td>${formatRupiah(it.price)}</td>
+      <td>
+        <button class="row-action item-edit-btn" data-id="${it.id}">Edit</button>
+        &nbsp;·&nbsp;
+        <button class="row-action item-delete-btn" data-id="${it.id}" style="color:var(--color-error);">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.item-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openItemModal(btn.dataset.id));
+  });
+  tbody.querySelectorAll('.item-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteItem(btn.dataset.id));
+  });
+}
+
+function openItemModal(id){
+  editingItemId = id || null;
+  const item = id ? allItems.find(it => it.id === id) : null;
+
+  document.getElementById('itemModalTitle').textContent = item ? 'Edit Item' : 'Tambah Item';
+  document.getElementById('itemName').value = item ? item.item_name : '';
+  document.getElementById('itemPrice').value = item ? item.price : '';
+  document.getElementById('itemModalOverlay').classList.remove('hidden');
+}
+function closeItemModal(){
+  document.getElementById('itemModalOverlay').classList.add('hidden');
+  editingItemId = null;
+}
+document.getElementById('addItemBtn').addEventListener('click', () => openItemModal(null));
+document.getElementById('itemModalCancelBtn').addEventListener('click', closeItemModal);
+document.getElementById('itemModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'itemModalOverlay') closeItemModal();
+});
+
+document.getElementById('itemModalSaveBtn').addEventListener('click', async () => {
+  const name = document.getElementById('itemName').value.trim();
+  const price = Number(document.getElementById('itemPrice').value);
+
+  if (!name){ alert('Nama item wajib diisi.'); return; }
+  if (!price || price <= 0){ alert('Harga wajib diisi.'); return; }
+
+  let error;
+  if (editingItemId){
+    ({ error } = await supabaseClient.from('service_items').update({ item_name: name, price }).eq('id', editingItemId));
+  } else {
+    ({ error } = await supabaseClient.from('service_items').insert({ item_name: name, price }));
+  }
+
+  if (error){
+    console.error(error);
+    alert('Gagal menyimpan item: ' + error.message);
+    return;
+  }
+
+  closeItemModal();
+  await loadItems();
+});
+
+async function deleteItem(id){
+  if (!confirm('Hapus item ini? Item yang sudah pernah dipakai di order lama tetap tersimpan di riwayat, cuma nggak bisa dipilih lagi buat order baru.')) return;
+
+  const { error } = await supabaseClient.from('service_items').delete().eq('id', id);
+  if (error){
+    console.error(error);
+    alert('Gagal menghapus item: ' + error.message);
+    return;
+  }
+  await loadItems();
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadServices(){
+  const { data, error } = await supabaseClient
+    .from('services')
+    .select('id, category, price_per_kg, min_charge_kg, estimated_days')
+    .order('category', { ascending: true });
+
+  if (error){
+    console.error(error);
+    document.getElementById('servicesTableBody').innerHTML =
+      `<tr><td colspan="5" class="table-empty">Gagal memuat data layanan.</td></tr>`;
+    return;
+  }
+  allServices = data || [];
+  renderServicesTable();
+}
+
+async function loadItems(){
+  const { data, error } = await supabaseClient
+    .from('service_items')
+    .select('id, item_name, price')
+    .order('item_name', { ascending: true });
+
+  if (error){
+    console.error(error);
+    document.getElementById('itemsTableBody').innerHTML =
+      `<tr><td colspan="3" class="table-empty">Gagal memuat data item.</td></tr>`;
+    return;
+  }
+  allItems = data || [];
+  renderItemsTable();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── AUTH GUARD — HANYA owner ───────────────────────────────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!profile || profile.role !== 'owner') {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  await Promise.all([loadServices(), loadItems()]);
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

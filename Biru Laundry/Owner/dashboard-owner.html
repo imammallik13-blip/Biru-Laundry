@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Owner — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<link rel="stylesheet" href="../css/owner.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-owner.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Dashboard
+      </a>
+      <a href="cash-flow.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        Cash Flow
+      </a>
+      <a href="kelola-harga.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Harga
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1 id="greetingName">Halo 👋</h1>
+        <p>Ringkasan omset, piutang, dan pelanggan bisnis kamu.</p>
+      </div>
+    </div>
+
+    <!-- Tabs periode -->
+    <div class="rpt-tabs">
+      <button type="button" class="rpt-tab active" data-days="7">7 Hari Terakhir</button>
+      <button type="button" class="rpt-tab" data-days="30">30 Hari Terakhir</button>
+    </div>
+
+    <!-- Ringkasan angka -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="s-label">Total Omset</p>
+        <p class="s-value" id="statOmset">–</p>
+        <span class="compare-badge flat" id="compareBadge">–</span>
+      </div>
+      <div class="summary-card accent">
+        <p class="s-label">Total Piutang</p>
+        <p class="s-value" id="statPiutang">–</p>
+        <span id="piutangCountNote" style="font-size:0.78rem; color:var(--color-muted); display:block; margin-top:8px;">–</span>
+      </div>
+      <div class="summary-card">
+        <p class="s-label">Pelanggan Baru</p>
+        <p class="s-value" id="statPelangganBaru">–</p>
+      </div>
+      <div class="summary-card">
+        <p class="s-label">Total Pelanggan</p>
+        <p class="s-value" id="statPelangganTotal">–</p>
+      </div>
+    </div>
+
+    <!-- Grafik tren omset -->
+    <section class="card chart-card">
+      <div class="chart-card-head">
+        <div>
+          <span class="eyebrow">Tren Omset</span>
+          <h3>Uang Masuk Harian</h3>
+        </div>
+      </div>
+      <div class="bar-chart-wrap">
+        <svg class="bar-chart" id="omsetChart" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </section>
+
+    <!-- Status Pembayaran -->
+    <section class="card" style="margin-bottom:32px;">
+      <span class="eyebrow">Status Pembayaran</span>
+      <h3 class="section-title" style="margin-top:2px;">Order Belum Lunas (Piutang)</h3>
+      <div class="piutang-list" id="piutangList">
+        <p class="io-empty">Memuat data...</p>
+      </div>
+    </section>
+
+    <!-- Pelanggan Teratas -->
+    <section class="card">
+      <span class="eyebrow">Pelanggan</span>
+      <h3 class="section-title" style="margin-top:2px;">Pelanggan Paling Loyal</h3>
+      <div class="loyal-list" id="loyalList">
+        <p class="io-empty">Memuat data...</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// HELPERS
+// ============================================================
+function formatRupiah(n){
+  if (n == null) return 'Rp0';
+  return 'Rp' + Number(n).toLocaleString('id-ID');
+}
+function formatOrderNumber(n){ return `BL-${String(n).padStart(5, '0')}`; }
+function formatTanggalPendek(d){
+  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
+function dateKey(d){
+  const dt = new Date(d);
+  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+}
+
+function getPeriodBounds(days){
+  const end = new Date(); end.setHours(23,59,59,999);
+  const start = new Date(); start.setDate(start.getDate() - (days - 1)); start.setHours(0,0,0,0);
+  const prevEnd = new Date(start); prevEnd.setDate(prevEnd.getDate() - 1); prevEnd.setHours(23,59,59,999);
+  const prevStart = new Date(prevEnd); prevStart.setDate(prevStart.getDate() - (days - 1)); prevStart.setHours(0,0,0,0);
+  return { start, end, prevStart, prevEnd };
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let currentDays = 7;
+
+// ============================================================
+// RENDER: GRAFIK BATANG (SVG murni, tanpa library)
+// ============================================================
+function renderBarChart(dailyTotals){
+  const svg = document.getElementById('omsetChart');
+  const days = dailyTotals.length;
+
+  if (days === 0 || dailyTotals.every(d => d.total === 0)){
+    svg.innerHTML = '';
+    svg.style.display = 'none';
+    if (!document.getElementById('chartEmptyMsg')){
+      const msg = document.createElement('p');
+      msg.id = 'chartEmptyMsg';
+      msg.className = 'chart-empty';
+      msg.textContent = 'Belum ada pembayaran tercatat di periode ini.';
+      svg.parentElement.appendChild(msg);
+    }
+    return;
+  }
+  const existingMsg = document.getElementById('chartEmptyMsg');
+  if (existingMsg) existingMsg.remove();
+  svg.style.display = 'block';
+
+  const barWidth = 34, gap = 18;
+  const chartHeight = 220, topPad = 28, bottomPad = 36;
+  const usableHeight = chartHeight - topPad - bottomPad;
+  const width = days * (barWidth + gap) + gap;
+  const maxVal = Math.max(...dailyTotals.map(d => d.total), 1);
+
+  svg.setAttribute('viewBox', `0 0 ${width} ${chartHeight}`);
+
+  let bars = `<line x1="0" y1="${chartHeight - bottomPad}" x2="${width}" y2="${chartHeight - bottomPad}" class="baseline"></line>`;
+
+  dailyTotals.forEach((d, i) => {
+    const x = gap + i * (barWidth + gap);
+    const h = d.total > 0 ? Math.max((d.total / maxVal) * usableHeight, 3) : 0;
+    const y = chartHeight - bottomPad - h;
+    bars += `
+      <rect x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="4">
+        <title>${formatTanggalPendek(d.date)}: ${formatRupiah(d.total)}</title>
+      </rect>
+      <text x="${x + barWidth/2}" y="${chartHeight - bottomPad + 16}" text-anchor="middle" class="bar-label">${formatTanggalPendek(d.date)}</text>
+    `;
+  });
+
+  svg.innerHTML = bars;
+}
+
+// ============================================================
+// LOAD: RINGKASAN OMSET (payments) + GRAFIK + PERBANDINGAN
+// ============================================================
+async function loadOmsetSection(days){
+  const { start, end, prevStart, prevEnd } = getPeriodBounds(days);
+
+  const { data: payments, error } = await supabaseClient
+    .from('payments')
+    .select('amount, paid_at')
+    .gte('paid_at', prevStart.toISOString())
+    .lte('paid_at', end.toISOString())
+    .order('paid_at', { ascending: true });
+
+  if (error){
+    console.error(error);
+    document.getElementById('statOmset').textContent = 'Gagal memuat';
+    return;
+  }
+
+  const current = (payments || []).filter(p => new Date(p.paid_at) >= start);
+  const previous = (payments || []).filter(p => new Date(p.paid_at) < start);
+
+  const totalCurrent = current.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const totalPrevious = previous.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  document.getElementById('statOmset').textContent = formatRupiah(totalCurrent);
+
+  const badge = document.getElementById('compareBadge');
+  if (totalPrevious === 0){
+    badge.className = 'compare-badge ' + (totalCurrent > 0 ? 'up' : 'flat');
+    badge.textContent = totalCurrent > 0 ? 'Periode sebelumnya kosong' : 'Belum ada data';
+  } else {
+    const pct = ((totalCurrent - totalPrevious) / totalPrevious) * 100;
+    const naik = pct >= 0;
+    badge.className = 'compare-badge ' + (naik ? 'up' : 'down');
+    badge.textContent = `${naik ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% vs periode sebelumnya`;
+  }
+
+  // Susun total harian buat grafik
+  const dailyMap = {};
+  const cursor = new Date(start);
+  while (cursor <= end){
+    dailyMap[dateKey(cursor)] = { date: new Date(cursor), total: 0 };
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  current.forEach(p => {
+    const key = dateKey(p.paid_at);
+    if (dailyMap[key]) dailyMap[key].total += Number(p.amount || 0);
+  });
+
+  renderBarChart(Object.values(dailyMap));
+}
+
+// ============================================================
+// LOAD: STATUS PEMBAYARAN (PIUTANG)
+// ============================================================
+async function loadPiutangSection(){
+  const list = document.getElementById('piutangList');
+
+  const { data: orders, error: orderErr } = await supabaseClient
+    .from('orders')
+    .select('id, order_number, total_price, customers ( name, phone )')
+    .not('total_price', 'is', null)
+    .neq('status', 'dibatalkan')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (orderErr){
+    console.error(orderErr);
+    list.innerHTML = `<p class="io-empty">Gagal memuat data piutang.</p>`;
+    return;
+  }
+
+  const orderIds = (orders || []).map(o => o.id);
+  let paidByOrder = {};
+
+  if (orderIds.length > 0){
+    const { data: payments } = await supabaseClient
+      .from('payments')
+      .select('order_id, amount')
+      .in('order_id', orderIds);
+
+    (payments || []).forEach(p => {
+      paidByOrder[p.order_id] = (paidByOrder[p.order_id] || 0) + Number(p.amount || 0);
+    });
+  }
+
+  const outstanding = (orders || [])
+    .map(o => ({
+      ...o,
+      paid: paidByOrder[o.id] || 0,
+      sisa: Number(o.total_price || 0) - (paidByOrder[o.id] || 0),
+    }))
+    .filter(o => o.sisa > 0)
+    .sort((a, b) => b.sisa - a.sisa);
+
+  const totalPiutang = outstanding.reduce((sum, o) => sum + o.sisa, 0);
+  document.getElementById('statPiutang').textContent = formatRupiah(totalPiutang);
+  document.getElementById('piutangCountNote').textContent = `${outstanding.length} order belum lunas`;
+
+  if (outstanding.length === 0){
+    list.innerHTML = `<p class="io-empty">Semua order sudah lunas. 🎉</p>`;
+    return;
+  }
+
+  list.innerHTML = outstanding.slice(0, 10).map(o => `
+    <div class="piutang-row">
+      <div class="pr-info">
+        <strong>#${formatOrderNumber(o.order_number)} — ${o.customers?.name || '-'}</strong>
+        <span>${o.customers?.phone || ''} · Total ${formatRupiah(o.total_price)}</span>
+      </div>
+      <div class="pr-amount">
+        <strong>${formatRupiah(o.sisa)}</strong>
+        <span>sisa tagihan</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// LOAD: PELANGGAN (baru & teratas)
+// ============================================================
+async function loadCustomerSection(days){
+  const { start } = getPeriodBounds(days);
+
+  const { count: totalCount } = await supabaseClient
+    .from('customers')
+    .select('id', { count: 'exact', head: true });
+
+  const { count: newCount } = await supabaseClient
+    .from('customers')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', start.toISOString());
+
+  document.getElementById('statPelangganTotal').textContent = totalCount ?? 0;
+  document.getElementById('statPelangganBaru').textContent = newCount ?? 0;
+
+  const { data: topCustomers, error } = await supabaseClient
+    .from('customers')
+    .select('name, total_kg_lifetime, total_order_lifetime')
+    .order('total_kg_lifetime', { ascending: false })
+    .limit(5);
+
+  const list = document.getElementById('loyalList');
+  if (error){
+    console.error(error);
+    list.innerHTML = `<p class="io-empty">Gagal memuat data pelanggan.</p>`;
+    return;
+  }
+  if (!topCustomers || topCustomers.length === 0 || !topCustomers[0].total_kg_lifetime){
+    list.innerHTML = `<p class="io-empty">Belum ada riwayat cukup buat menentukan pelanggan teratas.</p>`;
+    return;
+  }
+
+  list.innerHTML = topCustomers.map((c, i) => `
+    <div class="loyal-row">
+      <span class="loyal-name"><span class="loyal-rank">${i + 1}</span>${c.name || '-'}</span>
+      <span class="loyal-meta">${(c.total_kg_lifetime || 0)} kg · ${c.total_order_lifetime || 0}x order</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// PERIOD TABS
+// ============================================================
+document.querySelectorAll('.rpt-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rpt-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentDays = parseInt(tab.dataset.days);
+    loadOmsetSection(currentDays);
+    loadCustomerSection(currentDays);
+  });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── AUTH GUARD — HANYA owner ───────────────────────────────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('name, role')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!profile || profile.role !== 'owner') {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  document.getElementById('greetingName').textContent = `Halo, ${profile.name} 👋`;
+
+  await Promise.all([
+    loadOmsetSection(currentDays),
+    loadPiutangSection(),
+    loadCustomerSection(currentDays),
+  ]);
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-admin.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+        Dashboard
+      </a>
+      <a href="order-masuk.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M21 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"></path><path d="M3 8l2.45-4.11A2 2 0 0 1 7.18 3h9.64a2 2 0 0 1 1.73.89L21 8"></path><path d="M3 8h18"></path></svg>
+        Order Masuk
+      </a>
+      <a href="order-aktif.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
+        Order Aktif
+      </a>
+      <a href="input-order.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Input Order Baru
+      </a>
+      <a href="pelanggan.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Kelola Pelanggan
+      </a>
+      <a href="promo-admin.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Promo
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1 id="greetingName">Halo 👋</h1>
+        <p id="todayDate"></p>
+      </div>
+      <div class="admin-user">
+        <span id="staffName">Staff</span>
+        <a href="input-order.html" class="btn btn-primary btn-sm">+ Input Order Baru</a>
+      </div>
+    </div>
+
+    <!-- Kartu ringkasan -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="s-label">Menunggu Konfirmasi</p>
+        <p class="s-value" id="countMenunggu">–</p>
+      </div>
+      <div class="summary-card">
+        <p class="s-label">Sedang Diproses</p>
+        <p class="s-value" id="countProses">–</p>
+      </div>
+      <div class="summary-card accent">
+        <p class="s-label">Siap Diambil / Diantar</p>
+        <p class="s-value" id="countSiap">–</p>
+      </div>
+      <div class="summary-card">
+        <p class="s-label">Selesai Hari Ini</p>
+        <p class="s-value" id="countSelesai">–</p>
+      </div>
+    </div>
+
+    <!-- Filter toolbar -->
+    <h2 class="section-title">Order Terbaru</h2>
+    <div class="filter-bar">
+      <input type="search" id="searchInput" placeholder="Cari nama, no HP, atau nomor order...">
+      <select id="statusFilter">
+        <option value="semua">Semua Status</option>
+        <option value="menunggu_konfirmasi">Menunggu Konfirmasi</option>
+        <option value="menunggu_dijemput">Menunggu Dijemput</option>
+        <option value="diterima">Diterima di Toko</option>
+        <option value="proses">Sedang Diproses</option>
+        <option value="siap">Siap Diambil/Diantar</option>
+        <option value="selesai">Selesai</option>
+      </select>
+      <select id="sourceFilter">
+        <option value="semua">Semua Sumber</option>
+        <option value="antar">Antar Sendiri</option>
+        <option value="pickup">Pickup</option>
+        <option value="walkin">Walk-in</option>
+      </select>
+    </div>
+
+    <!-- Tabel order -->
+    <div class="table-wrapper">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Pelanggan</th>
+            <th>Sumber</th>
+            <th>Kategori</th>
+            <th>Status</th>
+            <th>Pembayaran</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr><td colspan="8" class="table-empty">Memuat data order...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// MAP PATTERN — sesuai preferensi coding project ini
+// ============================================================
+const STATUS_MAP = {
+  menunggu_konfirmasi: { label: 'Menunggu Konfirmasi', chipClass: 'chip-menunggu' },
+  menunggu_dijemput:   { label: 'Menunggu Dijemput',   chipClass: 'chip-menunggu' },
+  diterima:            { label: 'Diterima di Toko',    chipClass: 'chip-proses' },
+  proses:              { label: 'Sedang Diproses',     chipClass: 'chip-proses' },
+  siap:                { label: 'Siap Diambil/Diantar',chipClass: 'chip-siap' },
+  selesai:             { label: 'Selesai',              chipClass: 'chip-selesai' },
+  dibatalkan:          { label: 'Dibatalkan',           chipClass: 'chip-batal' },
+};
+
+const SOURCE_MAP = {
+  antar:  'Antar Sendiri',
+  pickup: 'Pickup',
+  walkin: 'Walk-in',
+};
+
+const CATEGORY_MAP = {
+  kiloan: 'Kiloan',
+  satuan: 'Satuan',
+};
+
+const PAYMENT_MAP = {
+  lunas: { label: 'Lunas',      chipClass: 'pay-lunas' },
+  dp:    { label: 'DP',         chipClass: 'pay-dp' },
+  belum: { label: 'Belum Bayar',chipClass: 'pay-belum' },
+};
+
+function formatRupiah(n){
+  if (n == null) return '-';
+  return 'Rp' + Number(n).toLocaleString('id-ID');
+}
+
+function formatOrderNumber(n){
+  return `BL-${String(n).padStart(5, '0')}`;
+}
+
+// Aturan routing tombol "Lihat →":
+// - Belum ada pembayaran dikonfirmasi admin (paymentStatus 'belum') → Order Masuk,
+//   tab sesuai order_source (pickup / antar). Walk-in dianggap sudah lunas di kasir,
+//   jadi tetap diarahkan ke Order Aktif kalau ternyata belum ada payment tercatat.
+// - Sudah ada pembayaran (dp/lunas) → Order Aktif.
+function buildLihatHref(o){
+  const belumBayar = o.paymentStatus === 'belum';
+
+  if (belumBayar && (o.order_source === 'pickup' || o.order_source === 'antar')){
+    return `order-masuk.html?tab=${o.order_source}&highlight=${o.id}`;
+  }
+  return `order-aktif.html?highlight=${o.id}`;
+}
+
+// ============================================================
+// STATE & RENDER
+// ============================================================
+let allOrders = [];       // hasil fetch terakhir (sudah gabung data customer & payment)
+let currentStatus = 'semua';
+let currentSource = 'semua';
+let currentSearch = '';
+
+function applyFiltersAndRender(){
+  let filtered = allOrders;
+
+  if (currentStatus !== 'semua'){
+    filtered = filtered.filter(o => o.status === currentStatus);
+  }
+  if (currentSource !== 'semua'){
+    filtered = filtered.filter(o => o.order_source === currentSource);
+  }
+  if (currentSearch.trim() !== ''){
+    const q = currentSearch.trim().toLowerCase();
+    filtered = filtered.filter(o =>
+      (o.customerName || '').toLowerCase().includes(q) ||
+      (o.customerPhone || '').toLowerCase().includes(q) ||
+      String(o.order_number).includes(q)
+    );
+  }
+
+  renderTable(filtered);
+}
+
+function renderTable(orders){
+  const tbody = document.getElementById('ordersTableBody');
+
+  if (!orders || orders.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" class="table-empty">Tidak ada order yang cocok dengan filter ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const statusInfo = STATUS_MAP[o.status] || { label: o.status, chipClass: 'chip-menunggu' };
+    const payInfo = PAYMENT_MAP[o.paymentStatus] || PAYMENT_MAP.belum;
+
+    return `
+      <tr>
+        <td><strong>#${formatOrderNumber(o.order_number)}</strong></td>
+        <td>
+          <span class="cust-name">${o.customerName || '-'}</span>
+          <span class="cust-phone">${o.customerPhone || ''}</span>
+        </td>
+        <td><span class="source-tag">${SOURCE_MAP[o.order_source] || o.order_source}</span></td>
+        <td>${CATEGORY_MAP[o.order_category] || o.order_category}${o.weight_kg ? ` · ${o.weight_kg}kg` : ''}</td>
+        <td><span class="chip ${statusInfo.chipClass}">${statusInfo.label}</span></td>
+        <td><span class="pay-chip ${payInfo.chipClass}">${payInfo.label}</span></td>
+        <td>${formatRupiah(o.total_price)}</td>
+        <td><a href="${buildLihatHref(o)}" class="row-action">Lihat →</a></td>
+      </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── 1. AUTH GUARD — hanya admin/staff yang boleh akses ────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+  const userId = session.user.id;
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('name, role')
+    .eq('id', userId)
+    .single();
+
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  document.getElementById('greetingName').textContent = `Halo, ${profile.name} 👋`;
+  document.getElementById('staffName').textContent = profile.name;
+  document.getElementById('todayDate').textContent =
+    new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ── 2. RINGKASAN (SUMMARY COUNTS) ──────────────────────────
+  const startOfToday = new Date();
+  startOfToday.setHours(0,0,0,0);
+
+  const [menungguRes, prosesRes, siapRes, selesaiRes] = await Promise.all([
+    supabaseClient.from('orders').select('id', { count: 'exact', head: true })
+      .in('status', ['menunggu_konfirmasi', 'menunggu_dijemput']),
+    supabaseClient.from('orders').select('id', { count: 'exact', head: true })
+      .eq('status', 'proses'),
+    supabaseClient.from('orders').select('id', { count: 'exact', head: true })
+      .eq('status', 'siap'),
+    supabaseClient.from('orders').select('id', { count: 'exact', head: true })
+      .eq('status', 'selesai')
+      .gte('created_at', startOfToday.toISOString()),
+  ]);
+
+  document.getElementById('countMenunggu').textContent = menungguRes.count ?? 0;
+  document.getElementById('countProses').textContent   = prosesRes.count ?? 0;
+  document.getElementById('countSiap').textContent     = siapRes.count ?? 0;
+  document.getElementById('countSelesai').textContent  = selesaiRes.count ?? 0;
+
+  // ── 3. AMBIL DAFTAR ORDER (join customers) ─────────────────
+  const { data: orders, error: ordersError } = await supabaseClient
+    .from('orders')
+    .select(`
+      id, order_number, order_source, order_category, status,
+      weight_kg, total_price, created_at,
+      customers ( name, phone )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (ordersError) {
+    console.error(ordersError);
+    document.getElementById('ordersTableBody').innerHTML =
+      `<tr><td colspan="8" class="table-empty">Gagal memuat data order. Coba refresh halaman.</td></tr>`;
+    return;
+  }
+
+  // ── 4. AMBIL STATUS PEMBAYARAN TERBARU PER ORDER ───────────
+  const orderIds = (orders || []).map(o => o.id);
+  let paymentByOrder = {};
+
+  if (orderIds.length > 0){
+    const { data: payments } = await supabaseClient
+      .from('payments')
+      .select('order_id, status, paid_at')
+      .in('order_id', orderIds)
+      .order('paid_at', { ascending: false });
+
+    (payments || []).forEach(p => {
+      // simpan hanya yang paling baru per order_id (karena sudah di-sort desc)
+      if (!paymentByOrder[p.order_id]) paymentByOrder[p.order_id] = p.status;
+    });
+  }
+
+  // ── 5. GABUNGKAN DATA & SIMPAN KE STATE ────────────────────
+  allOrders = (orders || []).map(o => ({
+    ...o,
+    customerName: o.customers?.name,
+    customerPhone: o.customers?.phone,
+    paymentStatus: paymentByOrder[o.id] || 'belum',
+  }));
+
+  applyFiltersAndRender();
+
+  // ── 6. EVENT LISTENERS FILTER ───────────────────────────────
+  document.getElementById('statusFilter').addEventListener('change', (e) => {
+    currentStatus = e.target.value;
+    applyFiltersAndRender();
+  });
+  document.getElementById('sourceFilter').addEventListener('change', (e) => {
+    currentSource = e.target.value;
+    applyFiltersAndRender();
+  });
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    applyFiltersAndRender();
+  });
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

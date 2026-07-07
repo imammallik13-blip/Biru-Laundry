@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daftar — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+
+<style>
+  :root{
+    --color-primary:#1D6F86; --color-primary-dark:#124F5F;
+    --color-ink:#10262E; --color-accent:#F2B705;
+    --color-bg:#F7FAFB; --color-surface:#FFFFFF;
+    --color-muted:#5C7A82; --color-border:#E1E8EA;
+    --color-error:#C4402E;
+    --radius-lg:22px; --radius-md:14px; --radius-sm:8px;
+    --shadow-card:0 8px 24px -12px rgba(16,38,46,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;color:var(--color-ink);background:var(--color-bg);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;}
+  a{color:inherit;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:transform .18s ease,background .18s ease;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--color-primary);color:#fff;box-shadow:var(--shadow-card);width:100%;}
+  .btn-primary:hover{background:var(--color-primary-dark);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+  .auth-shell{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr;}
+  .auth-brand{background:var(--color-ink);color:#fff;position:relative;padding:56px 64px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;}
+  .auth-brand::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(29,111,134,0.55),transparent 70%);top:-180px;right:-180px;pointer-events:none;}
+  .brand-mark{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:600;font-size:1.15rem;position:relative;z-index:1;}
+  .brand-mark .dot{width:10px;height:10px;border-radius:50%;background:var(--color-accent);}
+  .auth-brand-copy{position:relative;z-index:1;max-width:420px;}
+  .auth-brand-copy .eyebrow{display:inline-block;background:rgba(255,255,255,.1);color:#EAF3F5;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:6px 12px;border-radius:999px;margin-bottom:20px;}
+  .auth-brand-copy h1{font-size:clamp(1.7rem,2.6vw,2.3rem);line-height:1.25;color:#fff;}
+  .auth-brand-copy p{color:#BFD4D9;font-size:.98rem;line-height:1.6;margin-top:14px;}
+
+  .auth-form-panel{background:var(--color-bg);display:flex;align-items:center;justify-content:center;padding:40px 32px;}
+  .auth-card{width:100%;max-width:400px;}
+  .auth-card-header{margin-bottom:28px;}
+  .auth-card-header h2{font-size:clamp(1.5rem,2.2vw,1.8rem);}
+  .auth-card-header p{color:var(--color-muted);margin-top:8px;font-size:.95rem;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:7px;}
+  .field input{width:100%;padding:13px 14px;border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-surface);font-family:'Inter',sans-serif;font-size:.95rem;color:var(--color-ink);transition:border-color .15s ease,box-shadow .15s ease;}
+  .field input::placeholder{color:#9FB3B8;}
+  .field input:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(29,111,134,.14);}
+
+  .form-error{display:none;align-items:flex-start;gap:8px;background:#FBEAE7;border:1px solid #F1C6BE;color:var(--color-error);font-size:.86rem;padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:18px;line-height:1.45;}
+  .form-error.show{display:flex;}
+  .form-error svg{flex-shrink:0;margin-top:1px;width:16px;height:16px;}
+
+  .form-success{display:none;align-items:flex-start;gap:8px;background:#E6F4EE;border:1px solid #A8D5BC;color:#1A6B3C;font-size:.86rem;padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:18px;line-height:1.45;}
+  .form-success.show{display:flex;}
+  .form-success svg{flex-shrink:0;margin-top:1px;width:16px;height:16px;}
+
+  .link-muted{color:var(--color-primary);font-weight:600;text-decoration:none;}
+  .link-muted:hover{text-decoration:underline;}
+
+  .spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;display:none;}
+  .btn-primary.loading .spinner{display:inline-block;}
+  .btn-primary.loading .btn-text{opacity:.85;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){.btn,.spinner{transition:none;animation:none;}}
+
+  @media (max-width:900px){
+    .auth-shell{grid-template-columns:1fr;}
+    .auth-brand{padding:40px 32px;min-height:240px;}
+  }
+  @media (max-width:480px){
+    .auth-brand{padding:32px 24px;min-height:180px;}
+    .auth-form-panel{padding:32px 20px;}
+  }
+</style>
+
+<body>
+<div class="auth-shell">
+
+  <div class="auth-brand">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      Biru Laundry
+    </div>
+    <div class="auth-brand-copy">
+      <span class="eyebrow">Bergabung Sekarang</span>
+      <h1>Laundry bersih, pantau prosesnya dari mana aja.</h1>
+      <p>Daftar gratis, order laundry, dan track status cucian kamu secara online di Gresik.</p>
+    </div>
+    <div style="position:relative;z-index:1;color:#7E9BA1;font-size:.82rem;">
+      &copy; 2026 Biru Laundry — Gresik
+    </div>
+  </div>
+
+  <div class="auth-form-panel">
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <h2>Buat akun baru</h2>
+        <p>Sudah punya akun? <a href="index.html" class="link-muted">Masuk di sini</a></p>
+      </div>
+
+      <div class="form-error" id="formError" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="formErrorText">Terjadi kesalahan.</span>
+      </div>
+
+      <div class="form-success" id="formSuccess" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>Akun berhasil dibuat! Silakan <a href="index.html" class="link-muted">masuk sekarang</a>.</span>
+      </div>
+
+      <form id="registerForm" novalidate>
+        <div class="field">
+          <label for="nama">Nama Lengkap</label>
+          <input type="text" id="nama" placeholder="Nama kamu" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="hp">No HP</label>
+          <input type="tel" id="hp" placeholder="08xxxxxxxxxx" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="nama@email.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Minimal 6 karakter" autocomplete="new-password" required>
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+          <label for="confirmPassword">Konfirmasi Password</label>
+          <input type="password" id="confirmPassword" placeholder="Ulangi password" autocomplete="new-password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">Buat Akun</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const form       = document.getElementById('registerForm');
+  const submitBtn  = document.getElementById('submitBtn');
+  const errorBox   = document.getElementById('formError');
+  const errorText  = document.getElementById('formErrorText');
+  const successBox = document.getElementById('formSuccess');
+
+  function showError(msg) {
+    errorText.textContent = msg;
+    errorBox.classList.add('show');
+    successBox.classList.remove('show');
+  }
+  function hideError() {
+    errorBox.classList.remove('show');
+  }
+  function setLoading(val) {
+    submitBtn.disabled = val;
+    submitBtn.classList.toggle('loading', val);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const nama     = document.getElementById('nama').value.trim();
+    const hp       = document.getElementById('hp').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirmPassword').value;
+
+    if (!nama)            return showError('Nama lengkap wajib diisi.');
+    if (!email)           return showError('Email wajib diisi.');
+    if (password.length < 6) return showError('Password minimal 6 karakter.');
+    if (password !== confirm) return showError('Konfirmasi password tidak cocok.');
+
+    setLoading(true);
+
+    try {
+      // 1. Daftarkan user ke Supabase Auth
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { data: { name: nama } }
+      });
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('Gagal mendapatkan ID user dari Supabase.');
+
+      // 2. Insert baris ke tabel `profiles` (id = auth.users.id, menentukan role)
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .insert([{ id: userId, name: nama, phone: hp || null, role: 'customer' }]);
+      if (profileError) throw profileError;
+
+      // 3. Sinkronkan ke tabel `customers`.
+      //    PENTING: customers.id itu UUID SENDIRI, beda dari profiles.id / auth id.
+      //    Semua tabel lain (orders, addresses, messages) merujuk ke customers.id,
+      //    jadi baris ini WAJIB dibuat supaya akun baru bisa dipakai order.
+      //    Kalau no HP ini sudah pernah tercatat sebagai pelanggan walk-in
+      //    (profile_id masih kosong), gabungkan akun baru ke data lama itu
+      //    supaya riwayat order & total_kg/order_lifetime-nya ikut kebawa.
+      if (hp) {
+        const { data: existingCustomer, error: findError } = await supabaseClient
+          .from('customers')
+          .select('id, profile_id')
+          .eq('phone', hp)
+          .maybeSingle();
+        if (findError) throw findError;
+
+        if (existingCustomer && !existingCustomer.profile_id) {
+          const { error: linkError } = await supabaseClient
+            .from('customers')
+            .update({ profile_id: userId, name: nama })
+            .eq('id', existingCustomer.id);
+          if (linkError) throw linkError;
+        } else if (!existingCustomer) {
+          const { error: customerError } = await supabaseClient
+            .from('customers')
+            .insert([{ profile_id: userId, name: nama, phone: hp }]);
+          if (customerError) throw customerError;
+        }
+        // Kalau existingCustomer sudah punya profile_id (harusnya tidak mungkin
+        // untuk email baru), biarkan saja — tidak perlu insert duplikat.
+      } else {
+        const { error: customerError } = await supabaseClient
+          .from('customers')
+          .insert([{ profile_id: userId, name: nama, phone: null }]);
+        if (customerError) throw customerError;
+      }
+
+      // 4. Berhasil
+      setLoading(false);
+      form.reset();
+      successBox.classList.add('show');
+      submitBtn.style.display = 'none';
+
+    } catch (err) {
+      setLoading(false);
+      const msg = err.message || '';
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        showError('Email ini sudah terdaftar. Coba masuk atau gunakan email lain.');
+      } else if (msg.includes('invalid email')) {
+        showError('Format email tidak valid.');
+      } else if (msg.includes('Password should be')) {
+        showError('Password terlalu lemah. Gunakan minimal 6 karakter.');
+      } else {
+        showError('Gagal membuat akun: ' + msg);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

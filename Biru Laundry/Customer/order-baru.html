@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Baru — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+    <div class="topbar-user">
+      <a href="profil.html" class="avatar" aria-label="Profil">S</a>
+      <button type="button" id="logoutBtn" class="icon-btn" aria-label="Logout" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page page-narrow">
+
+  <a href="dashboard-customer.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    Kembali ke Dashboard
+  </a>
+
+  <div class="greeting">
+    <span class="eyebrow">Order Baru</span>
+    <h1>Mau laundry gimana?</h1>
+    <p>Pilih salah satu, lalu isi datanya.</p>
+  </div>
+
+  <!-- ============ FORM VIEW ============ -->
+  <div id="formView">
+
+    <div class="segmented" role="radiogroup" aria-label="Jenis order">
+      <div class="segmented-option selected" id="optAntar" data-target="panelAntar" tabindex="0" role="radio" aria-checked="true">
+        <span class="segmented-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
+        </span>
+        <div>
+          <strong>Antar ke Laundry</strong>
+          <small>Kamu datang sendiri ke toko, berat ditimbang di tempat</small>
+        </div>
+      </div>
+      <div class="segmented-option" id="optPickup" data-target="panelPickup" tabindex="0" role="radio" aria-checked="false">
+        <span class="segmented-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4"></path><circle cx="9" cy="21" r="1"></circle><circle cx="18" cy="21" r="1"></circle></svg>
+        </span>
+        <div>
+          <strong>Pickup ke Rumah</strong>
+          <small>Kami jemput ke alamat kamu sesuai jadwal</small>
+        </div>
+      </div>
+    </div>
+
+    <form class="card" id="panelAntar">
+      <div class="form-group">
+        <label for="antarNama">Nama</label>
+        <input type="text" id="antarNama" value="" required>
+      </div>
+      <div class="form-group">
+        <label for="antarHp">No HP</label>
+        <input type="tel" id="antarHp" value="" required>
+      </div>
+      <div class="form-group">
+        <label>Jenis Layanan</label>
+        <div class="radio-pills">
+          <div class="radio-pill">
+            <input type="radio" name="antarLayanan" id="antarReguler" checked>
+            <label for="antarReguler">Reguler (2–3 hari)</label>
+          </div>
+          <div class="radio-pill">
+            <input type="radio" name="antarLayanan" id="antarExpress">
+            <label for="antarExpress">Express (lebih cepat)</label>
+          </div>
+        </div>
+        <span class="form-hint">Ini baru preferensi awal kamu — jenis layanan final & harga tetap dikonfirmasi staff pas cucian ditimbang di toko.</span>
+      </div>
+      <div class="form-group">
+        <label for="antarBerat">Estimasi Berat (kg) <span style="font-weight:400; color:var(--color-muted);">— opsional</span></label>
+        <input type="number" id="antarBerat" min="0" step="0.5" placeholder="Contoh: 4">
+        <span class="form-hint">Berat final tetap ditimbang staff pas kamu datang ke toko.</span>
+      </div>
+      <div class="form-group">
+        <label for="antarCatatan">Catatan <span style="font-weight:400; color:var(--color-muted);">— opsional</span></label>
+        <textarea id="antarCatatan" placeholder="Misal: pisahkan baju putih"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Kirim Order</button>
+    </form>
+
+    <form class="card" id="panelPickup" style="display:none;">
+      <div class="form-group">
+        <label>Pilih Alamat</label>
+        <div class="address-list" id="addressList">
+          <p style="color:var(--color-muted); font-size:0.88rem;">Memuat alamat...</p>
+        </div>
+        <button type="button" class="add-address-btn" id="toggleNewAddress">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Tambah Alamat Baru
+        </button>
+        <div id="newAddressFields" style="display:none; margin-top:8px;">
+          <div class="form-group">
+            <label for="newAddrLabel">Label Alamat</label>
+            <input type="text" id="newAddrLabel" placeholder="Misal: Rumah Nenek">
+          </div>
+          <div class="form-group" style="margin-bottom:4px;">
+            <label for="newAddrFull">Alamat Lengkap</label>
+            <textarea id="newAddrFull" placeholder="Jalan, nomor rumah, patokan"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="pickupTanggal">Tanggal Pickup</label>
+          <input type="date" id="pickupTanggal" required>
+        </div>
+        <div class="form-group">
+          <label for="pickupJam">Jam Pickup</label>
+          <input type="time" id="pickupJam" required>
+        </div>
+      </div>
+      <span class="form-hint" style="margin:-10px 0 18px; display:block;">Ini permintaan awal — jadwal final ditentukan staff sesuai kondisi lapangan, kamu akan dapat notifikasi.</span>
+
+      <div class="form-group">
+        <label for="pickupCatatan">Catatan Tambahan <span style="font-weight:400; color:var(--color-muted);">— opsional</span></label>
+        <textarea id="pickupCatatan" placeholder="Misal: titip di satpam kalau saya tidak di rumah"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Kirim Order</button>
+    </form>
+
+  </div>
+
+  <!-- ============ SUCCESS VIEW ============ -->
+  <div class="card success-state" id="successView" style="display:none;">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <p class="eyebrow" style="margin:0 0 4px;">Order Terkirim</p>
+    <p class="success-order-number" id="successOrderNumber">#BL-00215</p>
+    <p id="successMessage" style="color:var(--color-muted); max-width:420px; margin:0 auto 24px;">
+      Datang ke toko kapan saja — staff kami akan timbang berat & konfirmasi ordernya.
+    </p>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <a href="tracking.html" class="btn btn-primary">Lihat Tracking</a>
+      <a href="dashboard-customer.html" class="btn btn-outline">Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ── STATE ──────────────────────────────────────────────────
+  let currentUserId = null;  // auth id (= profiles.id) — dipakai HANYA untuk auth & profiles
+  let customerId    = null;  // customers.id — WAJIB dipakai untuk orders/addresses (FK beneran)
+
+  // ── INIT: AUTH GUARD + TRANSLATE KE customers.id + ISI DATA USER ────
+  (async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.href = '../masuk.html'; return; }
+    currentUserId = session.user.id;
+
+    // Ambil profil → isi nama, HP, inisial avatar
+    const { data: profile } = await supabaseClient
+      .from('profiles').select('name, phone').eq('id', currentUserId).single();
+    if (profile) {
+      document.getElementById('antarNama').value = profile.name || '';
+      document.getElementById('antarHp').value   = profile.phone || '';
+      document.querySelector('.avatar').textContent = (profile.name || 'U').charAt(0).toUpperCase();
+    }
+
+    // PENTING: customers.id BEDA dari profiles.id / auth id.
+    // Semua order & alamat merujuk ke customers.id, jadi translate dulu di sini.
+    const { data: customerRow, error: customerError } = await supabaseClient
+      .from('customers')
+      .select('id')
+      .eq('profile_id', currentUserId)
+      .maybeSingle();
+
+    if (customerError || !customerRow) {
+      console.error('Data customer tidak ditemukan untuk akun ini:', customerError);
+      alert('Data pelanggan kamu belum lengkap. Hubungi admin sebelum melanjutkan order.');
+      return;
+    }
+    customerId = customerRow.id;
+
+    // Ambil alamat tersimpan (milik customers.id, bukan auth id) → render di panel Pickup
+    const { data: addresses } = await supabaseClient
+      .from('addresses')
+      .select('id, label, full_address, is_default')
+      .eq('customer_id', customerId)
+      .order('id', { ascending: true });
+
+    renderAddressList(addresses || []);
+  })();
+
+  // ── RENDER ALAMAT DI PANEL PICKUP ─────────────────────────────────────
+  function renderAddressList(addresses) {
+    const list = document.getElementById('addressList');
+    if (addresses.length === 0) {
+      list.innerHTML = '<p style="color:var(--color-muted); font-size:0.88rem;">Belum ada alamat tersimpan. Tambah dulu di halaman Profil.</p>';
+      return;
+    }
+    list.innerHTML = addresses.map((a, i) => `
+      <div class="address-option">
+        <input type="radio" name="pickupAlamat" id="addr${a.id}" value="${a.id}" ${a.is_default || i === 0 ? 'checked' : ''}>
+        <label for="addr${a.id}">
+          <span><strong>${a.label}</strong><span>${a.full_address}</span></span>
+          ${a.is_default ? '<span class="address-badge">Utama</span>' : ''}
+        </label>
+      </div>
+    `).join('');
+  }
+
+  // ── UI: SEGMENTED CONTROL ─────────────────────────────────────────────
+  const optAntar  = document.getElementById('optAntar');
+  const optPickup = document.getElementById('optPickup');
+  const panelAntar  = document.getElementById('panelAntar');
+  const panelPickup = document.getElementById('panelPickup');
+
+  function selectOption(target) {
+    const isAntar = target === 'panelAntar';
+    optAntar.classList.toggle('selected', isAntar);
+    optPickup.classList.toggle('selected', !isAntar);
+    optAntar.setAttribute('aria-checked', isAntar);
+    optPickup.setAttribute('aria-checked', !isAntar);
+    panelAntar.style.display  = isAntar ? 'block' : 'none';
+    panelPickup.style.display = isAntar ? 'none'  : 'block';
+  }
+  [optAntar, optPickup].forEach(opt => {
+    opt.addEventListener('click', () => selectOption(opt.dataset.target));
+    opt.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(opt.dataset.target); }
+    });
+  });
+
+  const toggleNewAddress = document.getElementById('toggleNewAddress');
+  const newAddressFields  = document.getElementById('newAddressFields');
+  if (toggleNewAddress && newAddressFields) {
+    toggleNewAddress.addEventListener('click', () => {
+      const showing = newAddressFields.style.display === 'block';
+      newAddressFields.style.display = showing ? 'none' : 'block';
+      toggleNewAddress.childNodes[toggleNewAddress.childNodes.length - 1].textContent =
+        showing ? ' Tambah Alamat Baru' : ' Batal tambah alamat';
+    });
+  }
+
+  // ── SUBMIT ORDER KE SUPABASE ─────────────────────────────────────────
+  async function handleSubmit(e, source) {
+    e.preventDefault();
+
+    if (!customerId) {
+      alert('Data pelanggan belum siap. Coba refresh halaman ini dulu.');
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+    try {
+      const isAntar = source === 'antar';
+      const selectedAddrId = document.querySelector('input[name="pickupAlamat"]:checked')?.value || null;
+
+      // order_category dipakai staff sebagai 'kiloan' / 'satuan' (lihat input-order.html
+      // & dashboard-admin.html), jadi TIDAK diisi dari sini. Preferensi Reguler/Express
+      // customer disimpan sebagai catatan tambahan supaya tetap terlihat staff.
+      const baseNotes = isAntar
+        ? document.getElementById('antarCatatan').value.trim()
+        : document.getElementById('pickupCatatan').value.trim();
+      const layananPref = isAntar
+        ? (document.getElementById('antarExpress').checked ? 'Express' : 'Reguler')
+        : null;
+      const notesCombined = isAntar
+        ? `[Preferensi layanan: ${layananPref}]${baseNotes ? ' ' + baseNotes : ''}`
+        : baseNotes;
+
+      const dataToInsert = {
+        customer_id:    customerId,
+        status:         'menunggu_konfirmasi',
+        order_source:   isAntar ? 'antar' : 'pickup',
+        order_category: null, // diisi staff nanti (kiloan/satuan) saat diproses
+        weight_kg:  isAntar ? (parseFloat(document.getElementById('antarBerat').value) || null) : null,
+        address_id: isAntar ? null : selectedAddrId,
+        pickup_date: isAntar ? null : (document.getElementById('pickupTanggal').value || null),
+        pickup_time: isAntar ? null : (document.getElementById('pickupJam').value || null),
+        notes: notesCombined,
+      };
+
+      const { data, error } = await supabaseClient.from('orders').insert([dataToInsert]).select();
+      if (error) throw error;
+
+      document.getElementById('formView').style.display  = 'none';
+      document.getElementById('successView').style.display = 'block';
+      const orderNum = data?.[0]?.order_number || '?????';
+      document.getElementById('successOrderNumber').textContent = '#BL-' + String(orderNum).padStart(5, '0');
+      document.getElementById('successMessage').textContent = isAntar
+        ? 'Datang ke toko kapan saja — staff kami akan timbang berat & konfirmasi ordernya.'
+        : 'Staff akan konfirmasi jadwal pickup & kirim notifikasi ke kamu.';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Gagal menyimpan order: ' + err.message);
+      btn.disabled = false; btn.textContent = 'Kirim Order';
+    }
+  }
+
+  panelAntar.addEventListener('submit',  e => handleSubmit(e, 'antar'));
+  panelPickup.addEventListener('submit', e => handleSubmit(e, 'pickup'));
+
+  // ── LOGOUT ───────────────────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await supabaseClient.auth.signOut(); } catch(e) { console.error(e); }
+    finally { window.location.href = '../masuk.html'; }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Input Order Baru — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- ============== SIDEBAR ============== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard-admin.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+        Dashboard
+      </a>
+      <a href="order-masuk.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M21 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"></path><path d="M3 8l2.45-4.11A2 2 0 0 1 7.18 3h9.64a2 2 0 0 1 1.73.89L21 8"></path><path d="M3 8h18"></path></svg>
+        Order Masuk
+      </a>
+      <a href="order-aktif.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
+        Order Aktif
+      </a>
+      <a href="input-order.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Input Order Baru
+      </a>
+      <a href="pelanggan.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Kelola Pelanggan
+      </a>
+      <a href="promo-admin.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82Z"></path><circle cx="8.5" cy="8.5" r="1"></circle></svg>
+        Kelola Promo
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="#" id="logoutLink" class="sidebar-link">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============== KONTEN UTAMA ============== -->
+  <main class="admin-main">
+
+    <div class="admin-topbar">
+      <div>
+        <h1>Input Order Baru</h1>
+        <p>Proses order customer yang datang, atau catat order walk-in dari nol.</p>
+      </div>
+    </div>
+
+    <!-- ===================== FORM (disembunyikan setelah submit sukses) ===================== -->
+    <div id="formWrapper">
+
+      <!-- Section 1: Pilih Sumber Order -->
+      <section class="card io-section">
+        <span class="eyebrow">Langkah 1</span>
+        <h3>Order Existing atau Walk-in?</h3>
+
+        <div class="io-mode-toggle">
+          <button type="button" class="io-mode-btn active" data-mode="existing">
+            Order dari Customer (App)
+          </button>
+          <button type="button" class="io-mode-btn" data-mode="walkin">
+            Walk-in Baru
+          </button>
+        </div>
+
+        <!-- MODE: Existing -->
+        <div id="modeExisting">
+          <p class="io-hint">Cari order yang sudah dibuat customer lewat website (antar/pickup) untuk diproses sekarang.</p>
+          <div class="io-search-row">
+            <input type="search" id="existingSearchInput" placeholder="Cari nama, no HP, atau nomor order...">
+          </div>
+          <div class="io-result-list" id="existingResultList"></div>
+
+          <div id="existingSelectedBox" style="display:none;"></div>
+        </div>
+
+        <!-- MODE: Walk-in -->
+        <div id="modeWalkin" style="display:none;">
+          <p class="io-hint">Cari dulu berdasarkan no HP — kalau pelanggan sudah pernah order, datanya tidak perlu diinput ulang.</p>
+          <div class="io-search-row">
+            <input type="search" id="custSearchInput" placeholder="Cari no HP pelanggan...">
+          </div>
+          <div class="io-result-list" id="custResultList"></div>
+
+          <div id="custSelectedBox" style="display:none;"></div>
+
+          <div id="newCustForm" style="display:none;">
+            <p class="io-hint" style="margin-top:14px;">Pelanggan tidak ditemukan — isi data baru:</p>
+            <div class="io-field-row">
+              <div class="io-field">
+                <label>Nama</label>
+                <input type="text" id="newCustName" placeholder="Nama pelanggan">
+              </div>
+              <div class="io-field">
+                <label>No HP</label>
+                <input type="text" id="newCustPhone" placeholder="08xxxxxxxxxx">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Detail Cucian -->
+      <section class="card io-section">
+        <span class="eyebrow">Langkah 2</span>
+        <h3>Detail Cucian</h3>
+
+        <div class="io-radio-group">
+          <label class="io-radio"><input type="radio" name="category" value="kiloan" checked> Kiloan</label>
+          <label class="io-radio"><input type="radio" name="category" value="satuan"> Satuan</label>
+        </div>
+        <p class="io-hint">Item satuan (sepatu, bed cover, dll) tidak bisa digabung dalam satu order dengan kiloan.</p>
+
+        <!-- KILOAN -->
+        <div id="kiloanFields">
+          <div class="io-field-row">
+            <div class="io-field">
+              <label>Berat Aktual (kg)</label>
+              <input type="number" id="weightInput" min="0" step="0.1" placeholder="0.0">
+              <small class="io-note" id="minChargeNote"></small>
+            </div>
+            <div class="io-field">
+              <label>Jenis Layanan</label>
+              <select id="serviceSelect">
+                <option value="">Memuat layanan...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SATUAN -->
+        <div id="satuanFields" style="display:none;">
+          <div class="io-item-rows" id="itemRowsWrap"></div>
+          <button type="button" class="btn btn-outline btn-sm" id="addItemRowBtn">+ Tambah Item</button>
+        </div>
+
+        <div class="io-field" style="margin-top:16px;">
+          <label>Catatan</label>
+          <textarea id="notesInput" rows="2" placeholder="Contoh: jangan pakai pewangi, ada noda di kerah, dll"></textarea>
+        </div>
+      </section>
+
+      <!-- Section 3: Ringkasan & Pembayaran -->
+      <section class="card io-section">
+        <span class="eyebrow">Langkah 3</span>
+        <h3>Ringkasan & Pembayaran</h3>
+
+        <div class="io-total-box">
+          <span>Total Harga</span>
+          <span class="io-total-value" id="totalValue">Rp0</span>
+        </div>
+
+        <div class="io-field-row">
+          <div class="io-field">
+            <label>Metode Pembayaran</label>
+            <select id="paymentMethod">
+              <option value="cash">Cash</option>
+              <option value="transfer">Transfer</option>
+              <option value="qris">QRIS</option>
+            </select>
+          </div>
+          <div class="io-field">
+            <label>Tipe Pembayaran</label>
+            <select id="paymentType">
+              <option value="full">Bayar Penuh (Lunas)</option>
+              <option value="dp">DP (Bayar Sebagian)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="io-field" id="dpAmountField" style="display:none;">
+          <label>Jumlah DP</label>
+          <input type="number" id="dpAmountInput" min="0" step="1000" placeholder="0">
+        </div>
+
+        <button type="button" class="btn btn-primary" id="submitOrderBtn" style="margin-top:8px;">
+          Buat Order & Cetak Nota
+        </button>
+      </section>
+
+    </div>
+
+    <!-- ===================== NOTA PREVIEW (muncul setelah submit sukses) ===================== -->
+    <div id="notaWrapper" style="display:none;">
+      <section class="card nota-preview" id="notaBox"></section>
+      <div class="nota-actions">
+        <button type="button" class="btn btn-outline" id="printNotaBtn">Cetak Nota</button>
+        <button type="button" class="btn btn-primary" id="newOrderBtn">+ Buat Order Baru Lagi</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// MAP PATTERN
+// ============================================================
+const PAYMENT_METHOD_MAP = { cash: 'Cash', transfer: 'Transfer', qris: 'QRIS' };
+const PAYMENT_TYPE_MAP   = { full: 'Lunas', dp: 'DP' };
+const SOURCE_MAP         = { antar: 'Antar Sendiri', pickup: 'Pickup', walkin: 'Walk-in' };
+
+function formatRupiah(n){ return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
+function formatOrderNumber(n){ return `BL-${String(n).padStart(5, '0')}`; }
+
+// ============================================================
+// STATE
+// ============================================================
+let currentMode = 'existing';           // 'existing' | 'walkin'
+let currentUserId = null;               // admin/staff yang login
+
+let servicesList = [];                  // dari tabel services
+let serviceItemsList = [];              // dari tabel service_items
+
+let selectedExistingOrder = null;       // order yang dipilih (mode existing)
+let selectedCustomer = null;            // customer yang dipilih/ditemukan (mode walkin)
+let creatingNewCustomer = false;
+
+let itemRows = [{ service_item_id: '', qty: 1 }]; // baris item satuan
+
+// ============================================================
+// MODE TOGGLE
+// ============================================================
+document.querySelectorAll('.io-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.io-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+
+    document.getElementById('modeExisting').style.display = currentMode === 'existing' ? 'block' : 'none';
+    document.getElementById('modeWalkin').style.display   = currentMode === 'walkin' ? 'block' : 'none';
+
+    // reset pilihan saat pindah mode
+    selectedExistingOrder = null;
+    selectedCustomer = null;
+    creatingNewCustomer = false;
+    document.getElementById('existingSelectedBox').style.display = 'none';
+    document.getElementById('custSelectedBox').style.display = 'none';
+    document.getElementById('newCustForm').style.display = 'none';
+  });
+});
+
+// ============================================================
+// MODE: EXISTING — cari order pending (menunggu konfirmasi/dijemput)
+// ============================================================
+let existingOrdersCache = [];
+
+async function loadExistingOrders(){
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select(`id, order_number, order_source, status, created_at, customers ( id, name, phone )`)
+    .in('status', ['menunggu_konfirmasi', 'menunggu_dijemput'])
+    .order('created_at', { ascending: true });
+
+  if (error){ console.error(error); return; }
+  existingOrdersCache = (data || []).map(o => ({
+    ...o, customerName: o.customers?.name, customerPhone: o.customers?.phone, customerId: o.customers?.id
+  }));
+  renderExistingResults(existingOrdersCache);
+}
+
+function renderExistingResults(list){
+  const wrap = document.getElementById('existingResultList');
+  if (!list.length){
+    wrap.innerHTML = `<div class="io-empty">Tidak ada order pending yang cocok.</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(o => `
+    <div class="io-result-item" data-id="${o.id}">
+      <div>
+        <strong>#${formatOrderNumber(o.order_number)}</strong> — ${o.customerName || '-'}
+        <span class="io-result-sub">${o.customerPhone || ''} · ${SOURCE_MAP[o.order_source] || o.order_source}</span>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm">Pilih</button>
+    </div>`).join('');
+
+  wrap.querySelectorAll('.io-result-item').forEach(el => {
+    el.addEventListener('click', () => selectExistingOrder(el.dataset.id));
+  });
+}
+
+document.getElementById('existingSearchInput').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = existingOrdersCache.filter(o =>
+    (o.customerName || '').toLowerCase().includes(q) ||
+    (o.customerPhone || '').toLowerCase().includes(q) ||
+    String(o.order_number).includes(q)
+  );
+  renderExistingResults(filtered);
+});
+
+function selectExistingOrder(id){
+  selectedExistingOrder = existingOrdersCache.find(o => o.id === id);
+  if (!selectedExistingOrder) return;
+
+  document.getElementById('existingResultList').innerHTML = '';
+  document.getElementById('existingSearchInput').value = '';
+
+  const box = document.getElementById('existingSelectedBox');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="io-selected-badge">
+      Order #${formatOrderNumber(selectedExistingOrder.order_number)} — ${selectedExistingOrder.customerName}
+      (${selectedExistingOrder.customerPhone}) · ${SOURCE_MAP[selectedExistingOrder.order_source]}
+      <button type="button" class="io-clear-btn" id="clearExistingBtn">Ganti</button>
+    </div>`;
+
+  document.getElementById('clearExistingBtn').addEventListener('click', () => {
+    selectedExistingOrder = null;
+    box.style.display = 'none';
+    loadExistingOrders();
+  });
+}
+
+// ============================================================
+// MODE: WALKIN — cari customer by no HP
+// ============================================================
+document.getElementById('custSearchInput').addEventListener('input', async (e) => {
+  const q = e.target.value.trim();
+  const resultWrap = document.getElementById('custResultList');
+  const newForm = document.getElementById('newCustForm');
+
+  if (q.length < 3){
+    resultWrap.innerHTML = '';
+    newForm.style.display = 'none';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .select('id, name, phone')
+    .ilike('phone', `%${q}%`)
+    .limit(5);
+
+  if (error){ console.error(error); return; }
+
+  if (data && data.length > 0){
+    newForm.style.display = 'none';
+    resultWrap.innerHTML = data.map(c => `
+      <div class="io-result-item" data-id="${c.id}" data-name="${c.name}" data-phone="${c.phone}">
+        <div><strong>${c.name}</strong><span class="io-result-sub">${c.phone}</span></div>
+        <button type="button" class="btn btn-outline btn-sm">Pilih</button>
+      </div>`).join('');
+
+    resultWrap.querySelectorAll('.io-result-item').forEach(el => {
+      el.addEventListener('click', () => selectCustomer(el.dataset.id, el.dataset.name, el.dataset.phone));
+    });
+  } else {
+    resultWrap.innerHTML = `<div class="io-empty">Tidak ditemukan.</div>`;
+    newForm.style.display = 'block';
+    creatingNewCustomer = true;
+    document.getElementById('newCustPhone').value = q;
+  }
+});
+
+function selectCustomer(id, name, phone){
+  selectedCustomer = { id, name, phone };
+  creatingNewCustomer = false;
+
+  document.getElementById('custResultList').innerHTML = '';
+  document.getElementById('custSearchInput').value = '';
+  document.getElementById('newCustForm').style.display = 'none';
+
+  const box = document.getElementById('custSelectedBox');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="io-selected-badge">
+      ${name} (${phone})
+      <button type="button" class="io-clear-btn" id="clearCustBtn">Ganti</button>
+    </div>`;
+
+  document.getElementById('clearCustBtn').addEventListener('click', () => {
+    selectedCustomer = null;
+    box.style.display = 'none';
+  });
+}
+
+// ============================================================
+// KATEGORI: KILOAN / SATUAN
+// ============================================================
+document.querySelectorAll('input[name="category"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const isKiloan = e.target.value === 'kiloan';
+    document.getElementById('kiloanFields').style.display = isKiloan ? 'block' : 'none';
+    document.getElementById('satuanFields').style.display = isKiloan ? 'none' : 'block';
+    computeTotal();
+  });
+});
+
+// ---- Load services & service_items ----
+async function loadServicesAndItems(){
+  const { data: services } = await supabaseClient
+    .from('services')
+    .select('id, category, price_per_kg, min_charge_kg, estimated_days');
+  servicesList = services || [];
+
+  const serviceSelect = document.getElementById('serviceSelect');
+  serviceSelect.innerHTML = servicesList.map(s => `
+    <option value="${s.id}" data-price="${s.price_per_kg}" data-min="${s.min_charge_kg}">
+      ${s.category === 'express' ? 'Express' : 'Reguler'} — ${formatRupiah(s.price_per_kg)}/kg
+      (min ${s.min_charge_kg}kg, est. ${s.estimated_days} hari)
+    </option>`).join('');
+  updateMinChargeNote();
+
+  const { data: items } = await supabaseClient
+    .from('service_items')
+    .select('id, item_name, price');
+  serviceItemsList = items || [];
+
+  renderItemRows();
+}
+
+function updateMinChargeNote(){
+  const opt = document.getElementById('serviceSelect').selectedOptions[0];
+  if (!opt) return;
+  document.getElementById('minChargeNote').textContent =
+    `Minimum charge ${opt.dataset.min}kg — berat di bawah itu tetap dihitung ${opt.dataset.min}kg.`;
+}
+
+document.getElementById('serviceSelect').addEventListener('change', () => {
+  updateMinChargeNote();
+  computeTotal();
+});
+document.getElementById('weightInput').addEventListener('input', computeTotal);
+
+// ---- Item rows (satuan) ----
+function renderItemRows(){
+  const wrap = document.getElementById('itemRowsWrap');
+  wrap.innerHTML = itemRows.map((row, i) => `
+    <div class="io-item-row" data-index="${i}">
+      <select class="item-select">
+        <option value="">Pilih item...</option>
+        ${serviceItemsList.map(si => `
+          <option value="${si.id}" data-price="${si.price}" ${row.service_item_id === si.id ? 'selected' : ''}>
+            ${si.item_name} — ${formatRupiah(si.price)}
+          </option>`).join('')}
+      </select>
+      <input type="number" class="item-qty" min="1" value="${row.qty}" placeholder="Qty">
+      <button type="button" class="io-remove-btn" data-index="${i}">✕</button>
+    </div>`).join('');
+
+  wrap.querySelectorAll('.item-select').forEach((sel, i) => {
+    sel.addEventListener('change', (e) => {
+      itemRows[i].service_item_id = e.target.value;
+      computeTotal();
+    });
+  });
+  wrap.querySelectorAll('.item-qty').forEach((inp, i) => {
+    inp.addEventListener('input', (e) => {
+      itemRows[i].qty = parseInt(e.target.value) || 1;
+      computeTotal();
+    });
+  });
+  wrap.querySelectorAll('.io-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index);
+      if (itemRows.length === 1) return; // minimal 1 baris
+      itemRows.splice(idx, 1);
+      renderItemRows();
+      computeTotal();
+    });
+  });
+}
+
+document.getElementById('addItemRowBtn').addEventListener('click', () => {
+  itemRows.push({ service_item_id: '', qty: 1 });
+  renderItemRows();
+});
+
+// ============================================================
+// HITUNG TOTAL
+// ============================================================
+function computeTotal(){
+  const category = document.querySelector('input[name="category"]:checked').value;
+  let total = 0;
+
+  if (category === 'kiloan'){
+    const weight = parseFloat(document.getElementById('weightInput').value) || 0;
+    const opt = document.getElementById('serviceSelect').selectedOptions[0];
+    if (opt){
+      const price = parseFloat(opt.dataset.price) || 0;
+      const min = parseFloat(opt.dataset.min) || 0;
+      const effectiveWeight = Math.max(weight, min);
+      total = effectiveWeight * price;
+    }
+  } else {
+    total = itemRows.reduce((sum, row) => {
+      const item = serviceItemsList.find(si => si.id === row.service_item_id);
+      return sum + (item ? item.price * row.qty : 0);
+    }, 0);
+  }
+
+  document.getElementById('totalValue').textContent = formatRupiah(total);
+  updateDpMax(total);
+  return total;
+}
+
+function updateDpMax(total){
+  const dpInput = document.getElementById('dpAmountInput');
+  dpInput.max = total;
+}
+
+// ============================================================
+// PEMBAYARAN
+// ============================================================
+document.getElementById('paymentType').addEventListener('change', (e) => {
+  document.getElementById('dpAmountField').style.display = e.target.value === 'dp' ? 'block' : 'none';
+});
+
+// ============================================================
+// SUBMIT ORDER
+// ============================================================
+document.getElementById('submitOrderBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('submitOrderBtn');
+  const category = document.querySelector('input[name="category"]:checked').value;
+  const notes = document.getElementById('notesInput').value.trim();
+  const total = computeTotal();
+
+  // ---- Validasi customer ----
+  let customerId = null;
+  let orderSource = 'walkin';
+
+  if (currentMode === 'existing'){
+    if (!selectedExistingOrder){ alert('Pilih dulu order yang mau diproses.'); return; }
+    customerId = selectedExistingOrder.customerId;
+    orderSource = selectedExistingOrder.order_source;
+  } else {
+    if (selectedCustomer){
+      customerId = selectedCustomer.id;
+    } else if (creatingNewCustomer){
+      const name = document.getElementById('newCustName').value.trim();
+      const phone = document.getElementById('newCustPhone').value.trim();
+      if (!name || !phone){ alert('Nama dan No HP pelanggan wajib diisi.'); return; }
+
+      const { data: newCust, error: custErr } = await supabaseClient
+        .from('customers')
+        .insert({ name, phone })
+        .select()
+        .single();
+
+      if (custErr){ console.error(custErr); alert('Gagal menyimpan data pelanggan baru.'); return; }
+      customerId = newCust.id;
+    } else {
+      alert('Cari atau tambahkan data pelanggan dulu.');
+      return;
+    }
+  }
+
+  // ---- Validasi detail cucian ----
+  let weightKg = null;
+  let serviceId = null;
+
+  if (category === 'kiloan'){
+    weightKg = parseFloat(document.getElementById('weightInput').value) || 0;
+    serviceId = document.getElementById('serviceSelect').value;
+    if (weightKg <= 0){ alert('Berat aktual wajib diisi.'); return; }
+    if (!serviceId){ alert('Pilih jenis layanan (Reguler/Express).'); return; }
+  } else {
+    const validRows = itemRows.filter(r => r.service_item_id && r.qty > 0);
+    if (validRows.length === 0){ alert('Tambahkan minimal 1 item satuan.'); return; }
+  }
+
+  // ---- Validasi pembayaran ----
+  const paymentMethod = document.getElementById('paymentMethod').value;
+  const paymentType = document.getElementById('paymentType').value;
+  let paymentAmount = total;
+
+  if (paymentType === 'dp'){
+    paymentAmount = parseFloat(document.getElementById('dpAmountInput').value) || 0;
+    if (paymentAmount <= 0 || paymentAmount >= total){
+      alert('Jumlah DP harus lebih dari 0 dan kurang dari total harga.');
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    let orderId, orderNumber;
+
+    if (currentMode === 'existing'){
+      // UPDATE order yang sudah ada — TIDAK membuat order baru
+      const { data: updated, error: updErr } = await supabaseClient
+        .from('orders')
+        .update({
+          order_category: category,
+          weight_kg: category === 'kiloan' ? weightKg : null,
+          service_id: category === 'kiloan' ? serviceId : null,
+          notes: notes || null,
+          total_price: total,
+          status: 'diterima',
+          handled_by: currentUserId,
+        })
+        .eq('id', selectedExistingOrder.id)
+        .select()
+        .single();
+
+      if (updErr) throw updErr;
+      orderId = updated.id;
+      orderNumber = updated.order_number;
+
+    } else {
+      // INSERT order baru (walk-in)
+      const { data: inserted, error: insErr } = await supabaseClient
+        .from('orders')
+        .insert({
+          customer_id: customerId,
+          order_source: 'walkin',
+          order_category: category,
+          weight_kg: category === 'kiloan' ? weightKg : null,
+          service_id: category === 'kiloan' ? serviceId : null,
+          notes: notes || null,
+          total_price: total,
+          status: 'diterima',
+          handled_by: currentUserId,
+        })
+        .select()
+        .single();
+
+      if (insErr) throw insErr;
+      orderId = inserted.id;
+      orderNumber = inserted.order_number;
+    }
+
+    // ---- Insert order_items kalau kategori satuan ----
+    if (category === 'satuan'){
+      const rows = itemRows
+        .filter(r => r.service_item_id && r.qty > 0)
+        .map(r => {
+          const item = serviceItemsList.find(si => si.id === r.service_item_id);
+          return {
+            order_id: orderId,
+            service_item_id: r.service_item_id,
+            qty: r.qty,
+            subtotal: item.price * r.qty,
+          };
+        });
+      const { error: itemsErr } = await supabaseClient.from('order_items').insert(rows);
+      if (itemsErr) throw itemsErr;
+    }
+
+    // ---- Insert payment ----
+    const { error: payErr } = await supabaseClient.from('payments').insert({
+      order_id: orderId,
+      method: paymentMethod,
+      type: paymentType,
+      amount: paymentAmount,
+      status: paymentType === 'full' ? 'lunas' : 'dp',
+      paid_at: new Date().toISOString(),
+    });
+    if (payErr) throw payErr;
+
+    // ---- Tampilkan nota ----
+    showNota({
+      orderNumber, category, weightKg, serviceId, total,
+      paymentMethod, paymentType, paymentAmount, notes,
+      customerName: currentMode === 'existing' ? selectedExistingOrder.customerName : (selectedCustomer?.name || document.getElementById('newCustName').value),
+      customerPhone: currentMode === 'existing' ? selectedExistingOrder.customerPhone : (selectedCustomer?.phone || document.getElementById('newCustPhone').value),
+    });
+
+  } catch (err){
+    console.error(err);
+    alert('Gagal menyimpan order. Coba lagi.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Buat Order & Cetak Nota';
+  }
+});
+
+// ============================================================
+// NOTA PREVIEW
+// ============================================================
+function showNota(d){
+  document.getElementById('formWrapper').style.display = 'none';
+  document.getElementById('notaWrapper').style.display = 'block';
+
+  const serviceInfo = servicesList.find(s => s.id === d.serviceId);
+  const sisa = d.paymentType === 'dp' ? d.total - d.paymentAmount : 0;
+
+  document.getElementById('notaBox').innerHTML = `
+    <div class="nota-head">
+      <strong>Biru Laundry</strong>
+      <span>Nota #${formatOrderNumber(d.orderNumber)}</span>
+    </div>
+    <div class="nota-line"><span>Pelanggan</span><span>${d.customerName} (${d.customerPhone})</span></div>
+    <div class="nota-line"><span>Kategori</span><span>${d.category === 'kiloan' ? `Kiloan — ${d.weightKg}kg (${serviceInfo ? (serviceInfo.category === 'express' ? 'Express' : 'Reguler') : ''})` : 'Satuan'}</span></div>
+    ${d.notes ? `<div class="nota-line"><span>Catatan</span><span>${d.notes}</span></div>` : ''}
+    <div class="nota-line"><span>Metode Bayar</span><span>${PAYMENT_METHOD_MAP[d.paymentMethod]}</span></div>
+    <div class="nota-line"><span>Status Bayar</span><span>${d.paymentType === 'full' ? 'Lunas' : `DP Rp${d.paymentAmount.toLocaleString('id-ID')} — Sisa ${formatRupiah(sisa)}`}</span></div>
+    <div class="nota-total"><span>Total</span><span>${formatRupiah(d.total)}</span></div>
+  `;
+}
+
+document.getElementById('printNotaBtn').addEventListener('click', () => window.print());
+
+document.getElementById('newOrderBtn').addEventListener('click', () => {
+  window.location.reload();
+});
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+
+  // ── AUTH GUARD ──────────────────────────────────────────────
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '../masuk.html'; return; }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
+    window.location.href = '../masuk.html';
+    return;
+  }
+
+  currentUserId = session.user.id;
+
+  await Promise.all([
+    loadExistingOrders(),
+    loadServicesAndItems(),
+  ]);
+
+  computeTotal();
+
+})();
+
+// ── LOGOUT ──────────────────────────────────────────────────
+document.getElementById('logoutLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
+  finally { window.location.href = '../masuk.html'; }
+});
+</script>
+
+</body>
+</html>

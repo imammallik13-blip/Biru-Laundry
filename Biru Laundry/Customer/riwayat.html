@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riwayat — Biru Laundry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">BL</span> Biru Laundry</div>
+    <div class="topbar-user">
+      <a href="profil.html" class="avatar" aria-label="Profil">S</a>
+      <button type="button" id="logoutBtn" class="icon-btn" aria-label="Logout" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page page-narrow">
+
+  <a href="dashboard-customer.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    Kembali ke Dashboard
+  </a>
+
+  <div class="greeting">
+    <span class="eyebrow">Riwayat</span>
+    <h1>Riwayat Transaksi</h1>
+    <p>Klik salah satu buat lihat detailnya.</p>
+  </div>
+
+  <div class="filter-tabs" id="filterTabs">
+    <button type="button" class="filter-tab active" data-filter="semua">Semua</button>
+    <button type="button" class="filter-tab" data-filter="diproses">Diproses</button>
+    <button type="button" class="filter-tab" data-filter="selesai">Selesai</button>
+    <button type="button" class="filter-tab" data-filter="dibatalkan">Dibatalkan</button>
+  </div>
+
+  <div class="history-list" id="historyList"></div>
+
+</main>
+
+<script>
+  const listEl = document.getElementById('historyList');
+  let currentFilter = 'semua';
+  let dbOrders = [];
+  let customerId = null; // customers.id — dipakai untuk query orders
+
+  // Status standar disamakan dgn dashboard-admin.html / order-masuk.html / order-aktif.html
+  const statusLabel = {
+    menunggu_konfirmasi: 'Menunggu Konfirmasi',
+    menunggu_dijemput:   'Menunggu Dijemput',
+    diterima:            'Diterima',
+    proses:              'Diproses',
+    siap:                'Siap Diambil/Diantar',
+    selesai:             'Selesai',
+    dibatalkan:          'Dibatalkan'
+  };
+
+  async function fetchHistoryData() {
+    try {
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError || !session) { window.location.href = '../masuk.html'; return; }
+
+      const { data: profile } = await supabaseClient.from('profiles').select('name').eq('id', session.user.id).single();
+      if (profile) document.querySelector('.avatar').textContent = (profile.name || 'U').charAt(0).toUpperCase();
+
+      // Translate ke customers.id — orders.customer_id merujuk ke customers.id, bukan auth id
+      const { data: customerRow, error: customerError } = await supabaseClient
+        .from('customers').select('id').eq('profile_id', session.user.id).maybeSingle();
+
+      if (customerError || !customerRow) {
+        console.error('Data customer tidak ditemukan:', customerError);
+        listEl.innerHTML = `<div class="empty-list">Data pelanggan belum lengkap. Hubungi admin.</div>`;
+        return;
+      }
+      customerId = customerRow.id;
+
+      const { data: orders, error: orderError } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+
+      if (orderError) throw orderError;
+
+      dbOrders = orders || [];
+      render();
+
+    } catch (err) {
+      console.error("Gagal memuat riwayat:", err);
+      listEl.innerHTML = `<div class="empty-list">Gagal memuat data riwayat: ${err.message}</div>`;
+    }
+  }
+
+  function render(){
+    let filtered = dbOrders;
+    if (currentFilter !== 'semua') {
+      if (currentFilter === 'diproses') {
+        // Kategori "Diproses" mencakup semua status yang belum selesai/batal
+        filtered = dbOrders.filter(o => ['menunggu_konfirmasi', 'menunggu_dijemput', 'diterima', 'proses', 'siap'].includes(o.status));
+      } else {
+        filtered = dbOrders.filter(o => o.status === currentFilter);
+      }
+    }
+
+    if(filtered.length === 0){
+      listEl.innerHTML = '<div class="empty-list">Belum ada transaksi di kategori ini.</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map((o) => {
+      const tgl = new Date(o.created_at).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+
+      let chipClass = o.status;
+      if (['menunggu_konfirmasi', 'menunggu_dijemput', 'diterima', 'proses', 'siap'].includes(o.status)) {
+        chipClass = 'diproses';
+      }
+
+      return `
+        <div class="history-item">
+          <div class="history-row" data-toggle="true">
+            <div class="hr-left">
+              <strong>#BL-${String(o.order_number || o.id).padStart(5, '0')}</strong>
+              <span>${tgl} · ${o.order_category || 'Menunggu diproses'}</span>
+            </div>
+            <div class="hr-right">
+              <span class="chip ${chipClass}">${statusLabel[o.status] || o.status}</span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="history-detail">
+            <div class="info-grid">
+              <div class="info-item"><span>Berat / Jumlah</span><strong>${o.weight_kg ? o.weight_kg + ' kg' : 'Menunggu timbangan'}</strong></div>
+              <div class="info-item"><span>Total Harga</span><strong>${o.total_price ? 'Rp ' + o.total_price.toLocaleString('id-ID') : 'Menunggu konfirmasi'}</strong></div>
+              <div class="info-item"><span>Status Pembayaran</span><strong>${o.total_price ? 'Lunas / Menunggu Pembayaran' : 'Menunggu konfirmasi'}</strong></div>
+              <div class="info-item"><span>Catatan</span><strong>${o.notes || '—'}</strong></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    listEl.querySelectorAll('[data-toggle]').forEach(row => {
+      row.addEventListener('click', () => {
+        row.closest('.history-item').classList.toggle('open');
+      });
+    });
+  }
+
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-tab');
+    if(!btn) return;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+
+  document.addEventListener('DOMContentLoaded', fetchHistoryData);
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await supabaseClient.auth.signOut(); } catch(e) {}
+    finally { window.location.href = '../masuk.html'; }
+  });
+</script>
+
+</body>
+</html>
