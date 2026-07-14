@@ -490,7 +490,7 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
       customers ( name, phone ),
       services ( category )
     `)
-    .in('status', ['diterima','proses', 'siap'])
+    .in('status', ['diterima', 'proses', 'siap'])
     .order('created_at', { ascending: false });
 
   // ── 3. AMBIL ORDER: Selesai (30 terakhir) ──────────────────
