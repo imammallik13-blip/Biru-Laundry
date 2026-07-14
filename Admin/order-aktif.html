@@ -164,6 +164,7 @@
 // MAP PATTERN — sesuai preferensi coding project ini
 // ============================================================
 const STATUS_MAP = {
+  diterima: { label: 'Diterima di Toko',     chipClass: 'chip-proses' },
   proses:   { label: 'Sedang Diproses',      chipClass: 'chip-proses' },
   siap:     { label: 'Siap Diambil/Diantar', chipClass: 'chip-siap' },
   selesai:  { label: 'Selesai',              chipClass: 'chip-selesai' },
@@ -171,8 +172,10 @@ const STATUS_MAP = {
 
 // Status berikutnya untuk tiap status aktif (dipakai tombol aksi kartu)
 const NEXT_STATUS_MAP = {
-  proses: { next: 'siap',    actionLabel: 'Tandai Siap Diambil/Diantar' },
-  siap:   { next: 'selesai', actionLabel: 'Tandai Selesai' },
+  diterima: { next: 'proses',  actionLabel: 'Mulai Proses' },
+  proses:   { next: 'siap',    actionLabel: 'Tandai Siap Diambil/Diantar' },
+  siap:     { next: 'selesai', actionLabel: 'Tandai Selesai' },
+};
   // selesai: tidak ada status berikutnya, tombol aksi status disembunyikan
 };
 
@@ -236,11 +239,13 @@ function applyFiltersAndRender(){
   }
 
   const groups = {
+    diterima: filtered.filter(o => o.status === 'diterima'),
     proses:  filtered.filter(o => o.status === 'proses'),
     siap:    filtered.filter(o => o.status === 'siap'),
     selesai: filtered.filter(o => o.status === 'selesai'),
   };
 
+  renderGroup('listDiterima', 'countDiterima', groups.diterima);
   renderGroup('listProses', 'countProses', groups.proses);
   renderGroup('listSiap', 'countSiap', groups.siap);
   renderGroup('listSelesai', 'countSelesai', groups.selesai);
@@ -485,7 +490,7 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
       customers ( name, phone ),
       services ( category )
     `)
-    .in('status', ['proses', 'siap'])
+    .in('status', ['diterima','proses', 'siap'])
     .order('created_at', { ascending: false });
 
   // ── 3. AMBIL ORDER: Selesai (30 terakhir) ──────────────────
