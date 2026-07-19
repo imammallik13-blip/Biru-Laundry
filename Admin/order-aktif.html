@@ -74,13 +74,14 @@
         <option value="walkin">Walk-in</option>
       </select>
     </div>
-    
-        <!-- ===== Group: Diterima ===== -->
-    <section class="oa-group" data-group="proses">
+
+    <!-- ===== Group: Diterima di Toko (belum mulai proses) ===== -->
+    <section class="oa-group" data-group="diterima">
       <div class="oa-group-head">
-        <h2 class="section-title">Diterima</h2>
+        <h2 class="section-title">Diterima di Toko</h2>
         <span class="oa-group-count" id="countDiterima">0</span>
       </div>
+      <p class="oa-group-note">Order yang sudah ditimbang/diinput staff, menunggu mulai dicuci.</p>
       <div class="oa-card-list" id="listDiterima">
         <p class="oa-empty">Memuat data order...</p>
       </div>
@@ -186,7 +187,6 @@ const NEXT_STATUS_MAP = {
   diterima: { next: 'proses',  actionLabel: 'Mulai Proses' },
   proses:   { next: 'siap',    actionLabel: 'Tandai Siap Diambil/Diantar' },
   siap:     { next: 'selesai', actionLabel: 'Tandai Selesai' },
-};
   // selesai: tidak ada status berikutnya, tombol aksi status disembunyikan
 };
 
@@ -224,7 +224,7 @@ function formatOrderNumber(n){
 // ============================================================
 // STATE
 // ============================================================
-let allOrders = [];        // seluruh order (proses+siap+selesai) sudah digabung data customer/service/payment
+let allOrders = [];        // seluruh order (diterima+proses+siap+selesai) sudah digabung data customer/service/payment
 let currentSource = 'semua';
 let currentSearch = '';
 let activeOrderId = null;  // dipakai modal status
@@ -251,9 +251,9 @@ function applyFiltersAndRender(){
 
   const groups = {
     diterima: filtered.filter(o => o.status === 'diterima'),
-    proses:  filtered.filter(o => o.status === 'proses'),
-    siap:    filtered.filter(o => o.status === 'siap'),
-    selesai: filtered.filter(o => o.status === 'selesai'),
+    proses:   filtered.filter(o => o.status === 'proses'),
+    siap:     filtered.filter(o => o.status === 'siap'),
+    selesai:  filtered.filter(o => o.status === 'selesai'),
   };
 
   renderGroup('listDiterima', 'countDiterima', groups.diterima);
@@ -353,7 +353,7 @@ async function confirmStatusUpdate(){
   }
 
   // Kalau ditandai "selesai", update angka loyalti pelanggan
-  // (total_kg_lifetime & total_orders_lifetime) sesuai catatan desain database
+  // (total_kg_lifetime & total_order_lifetime) sesuai catatan desain database
   if (activeNextStatus === 'selesai' && order?.customer_id){
     const { data: cust } = await supabaseClient
       .from('customers')
@@ -478,7 +478,7 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
 
   // ── 1. AUTH GUARD — hanya admin/staff yang boleh akses ────
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) { window.location.href = '../masuk.html'; return; }
+  if (!session) { window.location.href = '../index.html'; return; }
   const userId = session.user.id;
 
   const { data: profile } = await supabaseClient
@@ -488,11 +488,11 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
     .single();
 
   if (!profile || (profile.role !== 'admin' && profile.role !== 'owner')) {
-    window.location.href = '../masuk.html';
+    window.location.href = '../index.html';
     return;
   }
 
-  // ── 2. AMBIL ORDER: Proses + Siap (tanpa limit ketat) ──────
+  // ── 2. AMBIL ORDER: Diterima + Proses + Siap (tanpa limit ketat) ──
   const { data: activeOrders, error: activeErr } = await supabaseClient
     .from('orders')
     .select(`
@@ -519,7 +519,7 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
 
   if (activeErr || doneErr) {
     console.error(activeErr || doneErr);
-    ['listProses','listSiap','listSelesai'].forEach(id => {
+    ['listDiterima','listProses','listSiap','listSelesai'].forEach(id => {
       document.getElementById(id).innerHTML =
         `<p class="oa-empty">Gagal memuat data order. Coba refresh halaman.</p>`;
     });
@@ -570,7 +570,7 @@ document.getElementById('paymentConfirmBtn').addEventListener('click', confirmPa
 document.getElementById('logoutLink').addEventListener('click', async (e) => {
   e.preventDefault();
   try { await supabaseClient.auth.signOut(); } catch(err) { console.error(err); }
-  finally { window.location.href = '../masuk.html'; }
+  finally { window.location.href = '../index.html'; }
 });
 </script>
 
