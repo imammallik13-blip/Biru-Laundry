@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-client.js"></script>
+<script src="../js/supabase-client.js"></script>
 </head>
 
 <style>
@@ -190,18 +190,24 @@
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email,
         password,
-        options: { data: { name: nama } }
+        // name, phone, role dikirim lewat metadata supaya trigger
+        // handle_new_user (yang otomatis insert ke public.profiles)
+        // punya data lengkap, bukan cuma nama.
+        options: { data: { name: nama, phone: hp || '', role: 'customer' } }
       });
       if (authError) throw authError;
 
       const userId = authData.user?.id;
       if (!userId) throw new Error('Gagal mendapatkan ID user dari Supabase.');
 
-      // 2. Insert baris ke tabel `profiles` (id = auth.users.id, menentukan role)
-      const { error: profileError } = await supabaseClient
-        .from('profiles')
-        .insert([{ id: userId, name: nama, phone: hp || null, role: 'customer' }]);
-      if (profileError) throw profileError;
+      // 2. Baris di tabel `profiles` TIDAK perlu di-insert manual di sini.
+      //    Ada trigger di database (function `handle_new_user`, terpasang di
+      //    auth.users) yang OTOMATIS bikin baris profiles begitu signUp()
+      //    berhasil, pakai data dari `options.data` yang dikirim di signUp
+      //    (name, phone, role) lewat raw_user_meta_data.
+      //    Kalau di sini insert manual lagi, bakal kena error
+      //    "duplicate key value violates unique constraint profiles_pkey"
+      //    karena baris dgn id yg sama udah dibikin trigger duluan.
 
       // 3. Sinkronkan ke tabel `customers`.
       //    PENTING: customers.id itu UUID SENDIRI, beda dari profiles.id / auth id.
